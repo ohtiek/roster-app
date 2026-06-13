@@ -4,5 +4,9 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "env": {
+    "VITE_SUPABASE_URL":      "https://pygyeapuvatjgioevqwc.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_bDK-O14ToRyRFvOrBKmluw_cTfQw8B0"
+  }
 }
