@@ -5,8 +5,12 @@
 import { createClient } from '@supabase/supabase-js'
 import type { StaffMember, VICClient, ScoringWeights, VICAdvisorRow } from './types'
 
-const url  = import.meta.env.VITE_SUPABASE_URL  as string
-const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+// Cast through unknown so this compiles regardless of tsconfig vite/client setup
+const meta = (import.meta as unknown as { env: Record<string, string> }).env
+const url  = meta['VITE_SUPABASE_URL']      ?? ''
+const anon = meta['VITE_SUPABASE_ANON_KEY'] ?? ''
+//const url  = import.meta.env.VITE_SUPABASE_URL  as string
+//const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 if (!url || !anon) {
   throw new Error(
