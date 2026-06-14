@@ -16,6 +16,7 @@ import {
   type Role, type Gender, type SkillLevel, type ShiftName,
 } from '../types'
 import '../admin/AdminPanel.css'
+import RosterPlannerTab from './RosterPlannerTab'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function initials(name: string) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -445,7 +446,7 @@ function WeightsTab() {
 }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
-type TabId = 'staff'|'vic'|'weights'
+type TabId = 'staff'|'vic'|'weights'|'planner'
 
 export default function AdminPanel() {
   const [tab,setTab] = useState<TabId>('staff')
@@ -453,9 +454,10 @@ export default function AdminPanel() {
   const [vicClients] = useState<VICClient[]>([])
 
   const tabs: {id:TabId;label:string;icon:string}[] = [
-    {id:'staff',   label:'Staff',       icon:'ti-users'},
-    {id:'vic',     label:'VIC clients', icon:'ti-star'},
-    {id:'weights', label:'Weights',     icon:'ti-adjustments'},
+    {id:'staff',   label:'Staff',          icon:'ti-users'},
+    {id:'vic',     label:'VIC clients',    icon:'ti-star'},
+    {id:'weights', label:'Weights',        icon:'ti-adjustments'},
+    {id:'planner', label:'Roster planner', icon:'ti-calendar-event'},
   ]
 
   return (
@@ -488,6 +490,7 @@ export default function AdminPanel() {
         {tab==='staff'   && <StaffTab vicClients={vicClients}/>}
         {tab==='vic'     && <VICTab staff={staff}/>}
         {tab==='weights' && <WeightsTab/>}
+        {tab==='planner' && <RosterPlannerTab/>}
       </main>
     </div>
   )
