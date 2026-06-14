@@ -14,7 +14,7 @@ import type {
   ShiftName, ShiftAssignment, ShiftScore, VICCoverage, RosterResponse,
 } from '../types'
 import { AVATAR_STYLE } from '../types'
-import { fetchStaff, fetchVICClients, fetchWeights, saveRosterHistory } from '../supabaseClient'
+import { fetchStaff, fetchVICClients, fetchWeights, saveRosterDraft } from '../supabaseClient'
 import { generateRoster } from '../engine'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -657,22 +657,26 @@ export default function RosterPlannerTab() {
     draggingRef.current = null
   }
 
-  // Publish
+  // Send for review (replaces direct publish)
   async function handlePublish() {
     if (!hasRoster) return
     setLoading(true)
     try {
       const overrideIds = [...new Set(assignments.filter(a => a.isOverride).map(a => a.staffId))]
-      await saveRosterHistory(
-        selectedDate,
-        scores.length ? scores.reduce((a, s) => a + s.score, 0) / scores.length : 0,
-        overrideIds.length > 0 ? 'greedy-ts+manual' : 'greedy-ts',
-        { assignments, scores, vicCoverage, overrideIds, date: selectedDate },
-      )
+      const avgScore = scores.length
+        ? scores.reduce((a, s) => a + s.score, 0) / scores.length
+        : 0
+      await saveRosterDraft({
+        date:        selectedDate,
+        score:       avgScore,
+        solver:      overrideIds.length > 0 ? 'greedy-ts+manual' : 'greedy-ts',
+        overrideIds,
+        payload:     { assignments, scores, vicCoverage, overrideIds, date: selectedDate },
+      })
       setPublished(true)
-      showToast('Roster published to Supabase ✓', 3000)
+      showToast('Sent for review — open the Publish tab to approve', 3500)
     } catch (e: any) {
-      setError('Publish failed: ' + e.message)
+      setError('Send for review failed: ' + e.message)
     } finally {
       setLoading(false)
     }
@@ -962,8 +966,8 @@ export default function RosterPlannerTab() {
                 opacity: loading ? 0.6 : 1, fontFamily: 'inherit',
               }}
             >
-              <i className={`ti ${published ? 'ti-check' : 'ti-device-floppy'}`} aria-hidden="true" style={{ fontSize: 14 }} />
-              {published ? 'Published to Supabase' : 'Publish roster'}
+              <i className={`ti ${published ? 'ti-check' : 'ti-send'}`} aria-hidden="true" style={{ fontSize: 14 }} />
+              {published ? 'Sent for review' : 'Send for review'}
             </button>
 
             <button

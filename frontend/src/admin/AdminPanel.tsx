@@ -17,6 +17,7 @@ import {
 } from '../types'
 import '../admin/AdminPanel.css'
 import RosterPlannerTab from './RosterPlannerTab'
+import PublishTab from './PublishTab'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function initials(name: string) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -446,7 +447,7 @@ function WeightsTab() {
 }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
-type TabId = 'staff'|'vic'|'weights'|'planner'
+type TabId = 'staff'|'vic'|'weights'|'planner'|'publish'
 
 export default function AdminPanel() {
   const [tab,setTab] = useState<TabId>('staff')
@@ -458,6 +459,7 @@ export default function AdminPanel() {
     {id:'vic',     label:'VIC clients',    icon:'ti-star'},
     {id:'weights', label:'Weights',        icon:'ti-adjustments'},
     {id:'planner', label:'Roster planner', icon:'ti-calendar-event'},
+    {id:'publish', label:'Publish',        icon:'ti-send'},
   ]
 
   return (
@@ -491,6 +493,7 @@ export default function AdminPanel() {
         {tab==='vic'     && <VICTab staff={staff}/>}
         {tab==='weights' && <WeightsTab/>}
         {tab==='planner' && <RosterPlannerTab/>}
+        {tab==='publish' && <PublishTab/>}
       </main>
     </div>
   )
