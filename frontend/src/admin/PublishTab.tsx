@@ -89,20 +89,33 @@ function fmtDateTime(iso?: string) {
   })
 }
 
-function initials(id: string) {
+function initials(id?: string) {
+  if (!id) return '?'
   const name = STAFF_NAMES[id] ?? id
-  return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+  return name.split(' ').map((w: string) => w[0]).join('').slice(0,2).toUpperCase()
 }
 
-function avatarStyle(id: string): { bg: string; fg: string } {
-  const idx = parseInt(id.replace('s-','')) % Object.keys(AVC_COLORS).length
+function avatarStyle(id?: string): { bg: string; fg: string } {
+  if (!id) return { bg: '#D3D1C7', fg: '#444441' }
+  const num = parseInt(id.replace(/\D/g, '') || '0')
+  const idx = (isNaN(num) ? 0 : num) % Object.keys(AVC_COLORS).length
   const key = Object.keys(AVC_COLORS)[idx] ?? 'av-b'
-  const [bg, fg] = AVC_COLORS[key]
-  return { bg, fg }
+  const pair = AVC_COLORS[key] ?? ['#D3D1C7', '#444441']
+  return { bg: pair[0], fg: pair[1] }
 }
 
-function scoreColor(s: number) {
+function scoreColor(s?: number | null) {
+  if (s == null || isNaN(s)) return 'var(--color-text-secondary)'
   return s >= 90 ? '#27500A' : s >= 70 ? '#633806' : '#791F1F'
+}
+
+function safeScore(s?: number | null): string {
+  if (s == null || isNaN(s)) return '—'
+  return Math.round(s).toString()
+}
+
+function safeSolver(s?: string | null): string {
+  return s ?? 'unknown'
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -115,7 +128,7 @@ const STATUS_STYLE: Record<RosterStatus, { bg: string; color: string; label: str
 }
 
 function StatusBadge({ status }: { status: RosterStatus }) {
-  const s = STATUS_STYLE[status]
+  const s = STATUS_STYLE[status] ?? { bg:'#D3D1C7', color:'#444441', label: status ?? 'Unknown' }
   return (
     <span style={{
       fontSize: 11, fontWeight: 500, padding: '3px 10px',
@@ -181,9 +194,9 @@ function ShiftPreview({ payload }: { payload: RosterPayload }) {
               <span style={{ fontSize:11, opacity:.75 }}>{assigned.length} staff {score ? `· ${Math.round(score.score)}` : ''}</span>
             </div>
             <div style={{ background:'var(--color-background-secondary)', padding:'6px 8px', minHeight:60 }}>
-              {assigned.slice(0,5).map((a,i) => {
+              {(assigned ?? []).filter(a => a?.staffId).slice(0,5).map((a,i) => {
                 const av = avatarStyle(a.staffId)
-                const name = STAFF_NAMES[a.staffId] ?? a.staffId
+                const name = STAFF_NAMES[a.staffId] ?? a.staffId ?? '?'
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3 }}>
                     <div style={{ width:18, height:18, borderRadius:'50%', background:av.bg, color:av.fg, fontSize:8, fontWeight:500, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -367,7 +380,7 @@ function PublishModal({
             {fmtDate(roster.roster_date)}
           </div>
           <div style={{ fontSize:12, color:'#7A5C1E' }}>
-            Score {Math.round(roster.overall_score)}/100 · {roster.override_count ?? 0} override{(roster.override_count ?? 0) !== 1 ? 's' : ''} · {roster.solver_used}
+            Score {safeScore(roster.overall_score)}/100 · {roster.override_count ?? 0} override{(roster.override_count ?? 0) !== 1 ? 's' : ''} · {safeSolver(roster.solver_used)}
           </div>
           {roster.notes && (
             <div style={{ fontSize:12, color:'#7A5C1E', marginTop:4, fontStyle:'italic' }}>"{roster.notes}"</div>
@@ -420,15 +433,22 @@ function PendingCard({
   const [working, setWorking]          = useState(false)
   const [localNotes, setLocalNotes]    = useState(roster.notes ?? '')
 
-  const payload = roster.payload as RosterPayload | null
+  // Supabase may return payload as a JSON string or object depending on client version
+  const payload: RosterPayload | null = (() => {
+    if (!roster.payload) return null
+    if (typeof roster.payload === 'string') {
+      try { return JSON.parse(roster.payload) } catch { return null }
+    }
+    return roster.payload as RosterPayload
+  })()
 
   const overrideCount = roster.override_count ?? 0
   const hasWarnings   = overrideCount > 0
 
   const checks = [
-    { label: `Score ${Math.round(roster.overall_score)}/100 — ${roster.overall_score >= 90 ? 'all constraints met' : 'some constraints marginal'}`, ok: roster.overall_score >= 80 },
+    { label: `Score ${safeScore(roster.overall_score)}/100 — ${(roster.overall_score ?? 0) >= 90 ? 'all constraints met' : 'some constraints marginal'}`, ok: (roster.overall_score ?? 0) >= 80 },
     ...(overrideCount > 0 ? [{ label: `${overrideCount} manual override${overrideCount > 1 ? 's' : ''} — review shift assignments above`, ok: true }] : []),
-    { label: 'Solver: ' + roster.solver_used, ok: true },
+    { label: 'Solver: ' + safeSolver(roster.solver_used), ok: true },
   ]
 
   async function doApprove(by: string, notes: string) {
@@ -473,7 +493,7 @@ function PendingCard({
         <div>
           <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)' }}>{fmtDate(roster.roster_date)}</div>
           <div style={{ fontSize:12, color:'var(--color-text-secondary)', marginTop:2 }}>
-            Generated {fmtDateTime(roster.created_at)} · {roster.solver_used}
+            Generated {fmtDateTime(roster.created_at)} · {safeSolver(roster.solver_used)}
             {overrideCount > 0 && ` · ${overrideCount} override${overrideCount > 1 ? 's' : ''}`}
           </div>
         </div>
@@ -488,7 +508,7 @@ function PendingCard({
       {/* Score summary */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:8, padding:'0 16px 12px' }}>
         {[
-          { label:'Overall score', value:Math.round(roster.overall_score), suffix:'', color: scoreColor(roster.overall_score) },
+          { label:'Overall score', value:safeScore(roster.overall_score), suffix:'', color: scoreColor(roster.overall_score) },
           { label:'Overrides',     value:overrideCount,                    suffix:'', color:'var(--color-text-primary)' },
           { label:'Status',        value:STATUS_STYLE[localStatus].label,  suffix:'', color:STATUS_STYLE[localStatus].color },
           { label:'Date',          value:fmtDate(roster.roster_date),      suffix:'', color:'var(--color-text-primary)' },
@@ -607,7 +627,7 @@ function HistoryRow({
     <div style={{ display:'flex', alignItems:'center', gap:12, background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:'var(--border-radius-lg)', padding:'10px 14px' }}>
       <div style={{ width:110, flexShrink:0 }}>
         <div style={{ fontSize:13, fontWeight:500, color:'var(--color-text-primary)' }}>{fmtDate(row.roster_date)}</div>
-        <div style={{ fontSize:11, color:'var(--color-text-secondary)', marginTop:1 }}>{row.solver_used}</div>
+        <div style={{ fontSize:11, color:'var(--color-text-secondary)', marginTop:1 }}>{safeSolver(row.solver_used)}</div>
       </div>
       <div style={{ flex:1, fontSize:12, color:'var(--color-text-secondary)' }}>
         {row.override_count ?? 0} override{(row.override_count ?? 0) !== 1 ? 's' : ''}
@@ -616,7 +636,7 @@ function HistoryRow({
         {row.notes        && <span style={{ fontStyle:'italic' }}> · "{row.notes}"</span>}
       </div>
       <div style={{ fontSize:18, fontWeight:500, color: scoreColor(row.overall_score), width:32, textAlign:'right', flexShrink:0 }}>
-        {Math.round(row.overall_score)}
+        {safeScore(row.overall_score)}
       </div>
       <StatusBadge status={row.status} />
       <button
@@ -656,11 +676,15 @@ function PreviewModal({ rosterId, onClose }: { rosterId: string; onClose: () => 
             <>
               <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap' }}>
                 <StatusBadge status={row.status} />
-                <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>Score {Math.round(row.overall_score)}/100</span>
-                <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>{row.solver_used}</span>
+                <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>Score {safeScore(row.overall_score)}/100</span>
+                <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>{safeSolver(row.solver_used)}</span>
                 {row.override_count ? <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>{row.override_count} overrides</span> : null}
               </div>
-              {row.payload && <ShiftPreview payload={row.payload as RosterPayload} />}
+              {row.payload && <ShiftPreview payload={
+                typeof row.payload === 'string'
+                  ? (() => { try { return JSON.parse(row.payload as string) } catch { return null } })()
+                  : row.payload as RosterPayload
+              } />}
               {row.notes && (
                 <div style={{ fontSize:12, color:'var(--color-text-secondary)', fontStyle:'italic', borderTop:'0.5px solid var(--color-border-tertiary)', paddingTop:10 }}>
                   Note: "{row.notes}"
