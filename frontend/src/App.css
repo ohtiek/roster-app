@@ -38,7 +38,7 @@ body {
 .hdr-top { display: flex; align-items: flex-start; justify-content: space-between; padding: 14px 16px 10px; gap: 12px; }
 .eyebrow { font-size: 9px; font-weight: 500; letter-spacing: 0.18em; color: var(--gold); text-transform: uppercase; margin-bottom: 3px; }
 .store-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: white; line-height: 1; }
-.score-pill { background: rgba(201,168,76,0.15); border: 0.5px solid var(--gold); border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 500; }
+.score-pill { background: rgba(201,168,76,0.2); border: 1.5px solid var(--gold); border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
 .gold-rule { height: 2px; background: var(--gold); }
 
 .vic-toggle {
