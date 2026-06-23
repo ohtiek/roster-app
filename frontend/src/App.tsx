@@ -78,7 +78,7 @@ function RosterApp() {
   const shiftStaff: Record<ShiftName, ShiftAssignment[]> = { morning:[], afternoon:[], closing:[] }
   roster?.assignments.forEach(a => shiftStaff[a.shift].push(a))
 
-  function scoreColor(s:number){ return s>=90?'#27500A':s>=70?'#633806':'#791F1F' }
+  function scoreColor(s:number){ return s>=90?'#4ade80':s>=70?'#fbbf24':'#f87171' }
   function getScore(sh:ShiftName){ return roster?.shift_scores.find(s=>s.shift===sh)?.score??0 }
   function toggle(id:string){ setExpanded(prev=>{const n=new Set(prev);n.has(id)?n.delete(id):n.add(id);return n}) }
 
