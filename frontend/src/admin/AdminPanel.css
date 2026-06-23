@@ -630,3 +630,145 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   color: var(--muted);
 }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Missing abbreviated class aliases (used in AdminPanel.tsx) ── */
+:root { --green-text: #27500A; }
+
+.btn.bp { background: var(--navy); color: white; border-color: var(--navy); }
+.btn.bp:hover { background: var(--navy-mid); }
+.btn.bp:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.bg { background: transparent; border-color: rgba(0,0,0,0.15); color: var(--ink); }
+.btn.bg:hover { background: var(--surface2); }
+.btn.bsuc { background: #27500A; color: white; border-color: #27500A; }
+
+.search-w { position: relative; flex: 1; max-width: 300px; }
+.si { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--muted); pointer-events: none; }
+.sinp { width: 100%; height: 34px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 0 10px 0 32px; font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); color: var(--ink); outline: none; }
+.sinp:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,39,97,0.08); }
+
+.fpills { display: flex; gap: 5px; flex-wrap: wrap; }
+.fp { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.15); background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; transition: all 0.12s; font-family: 'DM Sans', sans-serif; }
+.fp:hover { border-color: var(--navy); color: var(--navy); }
+.fp.act { background: var(--navy); color: white; border-color: var(--navy); }
+
+.tbl-w { overflow-x: auto; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 10px; background: var(--surface); -webkit-overflow-scrolling: touch; }
+.cnt { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+.nc2 { display: flex; align-items: center; gap: 10px; }
+.sn { font-weight: 500; font-size: 13px; color: var(--ink); }
+.sr { font-size: 11px; color: var(--muted); text-transform: capitalize; }
+.gen { font-size: 12px; color: var(--muted); }
+.ra { display: flex; gap: 4px; justify-content: flex-end; }
+
+.ib { width: 30px; height: 30px; border-radius: 5px; background: transparent; border: 0.5px solid rgba(0,0,0,0.12); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.12s; }
+.ib:hover { background: var(--surface2); color: var(--ink); border-color: rgba(0,0,0,0.2); }
+.ib.d:hover { background: #FCEBEB; color: #791F1F; border-color: #F09595; }
+.ib.sm { width: 26px; height: 26px; font-size: 12px; }
+
+.vc { background: var(--surface); border: 0.5px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 16px; border-top: 3px solid var(--gold); }
+.vch { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.vcs { font-size: 18px; color: var(--gold); }
+.vcn { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; color: var(--navy); flex: 1; }
+.alvl { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px; }
+.allist { display: flex; flex-direction: column; gap: 5px; }
+.alrow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; border: 0.5px solid rgba(0,0,0,0.08); background: var(--surface2); }
+.alrow.on { background: #FDFAF3; border-color: rgba(201,168,76,0.3); }
+.aln { font-size: 13px; font-weight: 500; color: var(--ink); display: block; }
+.alr { font-size: 11px; color: var(--muted); }
+
+.w-intro { font-size: 14px; color: var(--muted); margin-bottom: 20px; max-width: 600px; line-height: 1.6; }
+.w-card { background: var(--surface); border: 0.5px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 20px; max-width: 680px; }
+.w-total { font-size: 13px; font-weight: 500; margin-bottom: 20px; }
+.w-stack { display: flex; flex-direction: column; gap: 18px; margin-bottom: 24px; }
+.wrow { display: flex; align-items: center; gap: 16px; }
+.wmeta { width: 200px; flex-shrink: 0; }
+.wlbl { font-size: 14px; font-weight: 500; color: var(--ink); }
+.wdesc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.wctl { flex: 1; display: flex; align-items: center; gap: 12px; }
+.wbw { flex: 1; position: relative; }
+.wbt { height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.wbf { height: 100%; border-radius: 3px; transition: width 0.2s; }
+.wslider { width: 100%; height: 4px; cursor: pointer; accent-color: var(--thumb-color, var(--navy)); }
+.wpct { width: 38px; text-align: right; font-size: 15px; font-weight: 500; flex-shrink: 0; }
+.wsum { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; margin-bottom: 10px; }
+.wseg { border-radius: 2px; transition: flex 0.2s; }
+.wleg { display: flex; flex-wrap: wrap; gap: 10px; }
+.wli { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.wld { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Mobile layout ── */
+@media (max-width: 640px) {
+  /* Sidebar becomes a fixed bottom tab bar */
+  .sidebar {
+    position: fixed;
+    bottom: 0; top: auto;
+    left: 0; right: 0;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    flex-direction: row;
+    border-top: 0.5px solid var(--rule-dark);
+    z-index: 200;
+  }
+  .sidebar-brand { display: none; }
+  .sidebar-footer { display: none; }
+  .sidebar-nav {
+    flex-direction: row;
+    flex: 1;
+    padding: 4px 0;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    gap: 0;
+  }
+  .nav-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 2px 4px;
+    font-size: 9px;
+    letter-spacing: 0;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .nav-item i { font-size: 20px; }
+  .nav-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+
+  /* Main content fills full width (sidebar is out of flow when fixed) */
+  .admin-main { width: 100%; padding-bottom: 72px; }
+  .admin-header { padding: 0 14px; }
+  .header-title { font-size: 16px; }
+  .back-link { font-size: 12px; }
+
+  /* Tab content padding */
+  .tab-content { padding: 12px; }
+
+  /* Search full width */
+  .search-w { max-width: 100%; }
+
+  /* Role filter pills: horizontal scroll instead of wrap to save vertical space */
+  .fpills { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .fpills::-webkit-scrollbar { display: none; }
+
+  /* Add staff button full width on mobile */
+  .tab-toolbar { gap: 8px; }
+
+  /* Staff table — horizontal scroll */
+  .tbl-w { border-radius: 8px; }
+
+  /* Weight rows: stack label above slider */
+  .wrow { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .wmeta { width: 100%; }
+  .wctl { width: 100%; }
+  .w-card { max-width: 100%; padding: 14px; }
+
+  /* Staff form: 2-col → 1-col */
+  .form-row-2 { grid-template-columns: 1fr; }
+
+  /* VIC grid: single column */
+  .vic-grid { grid-template-columns: 1fr; }
+
+  /* Modal: full width with margin */
+  .modal { max-width: 100%; border-radius: 12px 12px 0 0; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+}
