@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maison Aurore Roster — Introduction</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,system-ui,sans-serif;background:#141D4A;color:#F7F5EF;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.wrap{max-width:480px;width:100%;text-align:center}
+.mark{width:44px;height:44px;border-radius:10px;background:#C9A84C;color:#141D4A;font-family:'Palatino Linotype',Georgia,serif;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+h1{font-family:'Palatino Linotype',Georgia,serif;font-size:26px;font-weight:400;color:white;margin-bottom:8px}
+.sub{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:rgba(201,168,76,.6);margin-bottom:40px}
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:10px;padding:18px 20px;text-decoration:none;transition:background .15s,border-color .15s;text-align:left}
+.card:hover{background:rgba(255,255,255,.09);border-color:rgba(201,168,76,.4)}
+.card-icon{font-size:24px;flex-shrink:0}
+.card-title{font-size:15px;font-weight:600;color:#E8D09A;margin-bottom:3px}
+.card-desc{font-size:12px;color:rgba(255,255,255,.4);line-height:1.5}
+.card-arrow{margin-left:auto;color:rgba(201,168,76,.4);font-size:18px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark">MA</div>
+  <h1>Maison Aurore Roster</h1>
+  <p class="sub">Introduction documents</p>
+  <div class="cards">
+    <a href="pitch-deck.html" class="card">
+      <span class="card-icon">✦</span>
+      <div>
+        <div class="card-title">Pitch Deck</div>
+        <div class="card-desc">Overview of the product, scoring engine, VIC coverage, and deployment</div>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a href="user-guide.html" class="card">
+      <span class="card-icon">📋</span>
+      <div>
+        <div class="card-title">User Guide</div>
+        <div class="card-desc">Daily view, scoring, VIC clients, admin panel, and publishing workflow</div>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+  </div>
+</div>
+</body>
+</html>

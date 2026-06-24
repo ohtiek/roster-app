@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maison Aurore Roster — User Guide</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+:root{
+  --navy-deep:#141D4A;
+  --navy:#1E2761;
+  --gold:#C9A84C;
+  --gold-lt:#E8D09A;
+  --gold-dim:rgba(201,168,76,.12);
+  --cream:#F7F5EF;
+  --ink:#1a1a1a;
+  --muted:#6B6B6B;
+  --rule:rgba(0,0,0,.07);
+  --surface:#ffffff;
+  --surface2:#F5F3ED;
+  --green-bg:#EAF3DE;
+  --green-text:#27500A;
+  --serif:'Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;
+  --sans:'Helvetica Neue',Arial,system-ui,sans-serif;
+}
+
+body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+
+/* ── Page layout ── */
+.page{max-width:780px;margin:0 auto;padding:0 24px 80px}
+
+/* ── Doc header ── */
+.doc-header{background:var(--navy-deep);margin:0 -24px;padding:32px 24px 28px;margin-bottom:0}
+.doc-header-inner{max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;border-radius:8px;background:var(--gold);color:var(--navy-deep);font-family:var(--serif);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-name{font-family:var(--serif);font-size:17px;color:white;font-weight:400}
+.brand-sub{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.doc-label{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.3);font-weight:500}
+
+/* ── TOC band ── */
+.toc-band{background:var(--navy);margin:0 -24px;padding:14px 24px;margin-bottom:0}
+.toc-band-inner{max-width:780px;margin:0 auto;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.toc-item{font-size:11px;color:rgba(255,255,255,.45);text-decoration:none;padding:3px 0;white-space:nowrap;transition:color .12s}
+.toc-item:hover{color:var(--gold-lt)}
+.toc-sep{color:rgba(255,255,255,.15);font-size:11px;padding:0 4px}
+.gold-rule{height:2px;background:var(--gold);margin:0 -24px 40px}
+
+/* ── Section ── */
+.section{padding-top:48px;margin-top:0}
+.section+.section{border-top:0.5px solid var(--rule);margin-top:48px;padding-top:48px}
+
+.eyebrow{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+
+h2{font-family:var(--serif);font-size:clamp(20px,3vw,28px);font-weight:400;color:var(--navy);line-height:1.2;text-wrap:balance;margin-bottom:18px}
+h3{font-family:var(--serif);font-size:18px;font-weight:500;color:var(--navy);margin:28px 0 10px;line-height:1.3}
+h3:first-child{margin-top:0}
+
+p{margin-bottom:14px;color:var(--ink)}
+p:last-child{margin-bottom:0}
+
+/* ── Callout boxes ── */
+.callout{margin:20px 0;padding:14px 18px;border-radius:0 6px 6px 0;font-size:13.5px;line-height:1.6}
+.callout-tip{background:#EDF4FF;border-left:3px solid #1E4D8C;color:#0C447C}
+.callout-note{background:var(--gold-dim);border-left:3px solid var(--gold);color:#7A5C1E}
+.callout-warn{background:#FEF3E2;border-left:3px solid #D97706;color:#92400E}
+
+/* ── UI element references ── */
+.ui{display:inline-block;background:var(--surface2);border:0.5px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 7px;font-size:12px;font-weight:500;color:var(--navy);vertical-align:baseline;white-space:nowrap}
+
+/* ── Metric chips (score criteria) ── */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:18px 0}
+.metric-card{background:var(--surface);border:0.5px solid var(--rule);border-radius:8px;padding:14px 16px}
+.metric-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.metric-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.metric-label{font-size:12.5px;font-weight:600;color:var(--ink)}
+.metric-weight{font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);margin-left:auto}
+.metric-desc{font-size:12px;color:var(--muted);line-height:1.55}
+
+/* ── Step list ── */
+.steps{display:flex;flex-direction:column;gap:0;margin:18px 0;counter-reset:step}
+.step{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start;padding:14px 0;border-bottom:0.5px solid var(--rule)}
+.step:last-child{border-bottom:none}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--navy-deep);color:var(--gold-lt);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;margin-top:2px}
+.step-body h4{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.step-body p{font-size:13.5px;color:var(--ink);margin-bottom:0;line-height:1.6}
+
+/* ── Shift chips ── */
+.shift-chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.sc-m{background:#DDEAF8;color:#1E4D8C;padding:5px 14px;border-radius:5px;font-size:12.5px;font-weight:500}
+.sc-a{background:#EAE4F8;color:#4A3280;padding:5px 14px;border-radius:5px;font-size:12.5px;font-weight:500}
+.sc-c{background:#D8EEE8;color:#0F6E56;padding:5px 14px;border-radius:5px;font-size:12.5px;font-weight:500}
+
+/* ── Status pills (publish workflow) ── */
+.status-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}
+.status-pill{font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.03em}
+.st-pending{background:#FEF3E2;color:#92400E}
+.st-approved{background:#E6F1FB;color:#0C447C}
+.st-published{background:var(--green-bg);color:var(--green-text)}
+.st-rejected{background:#FCEBEB;color:#791F1F}
+.st-arrow{color:rgba(0,0,0,.25);font-size:14px}
+
+/* ── Admin tabs list ── */
+.tab-list{display:flex;flex-direction:column;gap:0;margin:16px 0;border:0.5px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--surface)}
+.tab-row{display:grid;grid-template-columns:140px 1fr;align-items:baseline;gap:12px;padding:12px 16px;border-bottom:0.5px solid var(--rule);font-size:13.5px}
+.tab-row:last-child{border-bottom:none}
+.tab-name{font-weight:600;color:var(--navy)}
+.tab-desc{color:var(--ink)}
+
+/* ── VIC affiliation example ── */
+.vic-example{background:var(--surface);border:0.5px solid rgba(201,168,76,.35);border-top:2.5px solid var(--gold);border-radius:0 0 7px 7px;padding:16px 18px;max-width:380px;margin:16px 0;font-size:13px}
+.vic-ex-name{font-family:var(--serif);font-size:16px;color:var(--navy);font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.vic-ex-star{color:var(--gold)}
+.vic-ex-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12.5px}
+.vic-ex-lbl{width:70px;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+
+/* ── Score indicator ── */
+.score-demo{display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid rgba(0,0,0,.1);border-radius:8px;padding:10px 16px;font-size:13.5px;margin:14px 0}
+.score-num{font-family:var(--serif);font-size:28px;line-height:1;font-weight:400;margin-right:4px}
+.score-green{color:#27500A}
+.score-amber{color:#633806}
+.score-red{color:#791F1F}
+.score-label{font-size:12px;color:var(--muted)}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;margin:16px 0;border:0.5px solid var(--rule);border-radius:8px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 14px;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:0.5px solid var(--rule);background:var(--surface2);text-align:left}
+td{padding:10px 14px;border-bottom:0.5px solid var(--rule);color:var(--ink);vertical-align:top}
+tr:last-child td{border-bottom:none}
+
+/* ── Footer ── */
+.doc-footer{margin-top:56px;padding-top:20px;border-top:0.5px solid var(--rule);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.doc-footer p{font-size:11.5px;color:var(--muted);margin:0}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .tab-row{grid-template-columns:1fr}
+  .tab-name{margin-bottom:2px}
+}
+@media print{
+  .toc-band,.doc-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-header-inner">
+    <div class="brand">
+      <div class="brand-mark">MA</div>
+      <div>
+        <div class="brand-name">Maison Aurore</div>
+        <div class="brand-sub">Roster · Supabase</div>
+      </div>
+    </div>
+    <span class="doc-label">User Guide</span>
+  </div>
+</div>
+
+<div class="toc-band">
+  <div class="toc-band-inner">
+    <a href="#overview" class="toc-item">Overview</a><span class="toc-sep">·</span>
+    <a href="#daily-view" class="toc-item">Daily View</a><span class="toc-sep">·</span>
+    <a href="#score" class="toc-item">Score</a><span class="toc-sep">·</span>
+    <a href="#vic" class="toc-item">VIC Coverage</a><span class="toc-sep">·</span>
+    <a href="#admin" class="toc-item">Admin Panel</a><span class="toc-sep">·</span>
+    <a href="#publish" class="toc-item">Publishing</a><span class="toc-sep">·</span>
+    <a href="#tips" class="toc-item">Tips</a>
+  </div>
+</div>
+<div class="gold-rule"></div>
+
+<div class="page">
+
+<!-- OVERVIEW -->
+<section class="section" id="overview">
+  <p class="eyebrow">Overview</p>
+  <h2>What is Maison Aurore Roster?</h2>
+  <p>Maison Aurore Roster is a daily scheduling tool for luxury retail boutiques. It automatically generates shift assignments for your team across three shifts — Morning, Afternoon, and Closing — and scores each roster against five criteria: skill coverage, VIC client affiliation, gender balance, seniority, and language diversity.</p>
+  <p>The roster engine runs entirely in your browser. Staff data and history are stored in Supabase; the app deploys on Vercel or Netlify with no server to manage.</p>
+  <div class="callout callout-note">This guide covers day-to-day use for store managers. For deployment and Supabase setup, see the README in the repository.</div>
+</section>
+
+<!-- DAILY VIEW -->
+<section class="section" id="daily-view">
+  <p class="eyebrow">Daily View</p>
+  <h2>Reading your roster</h2>
+  <p>When you open the app, it automatically generates today's roster and displays it. The header shows the store name and the overall roster score for the day.</p>
+
+  <h3>The shift tabs</h3>
+  <p>Use the tab bar to switch between shifts:</p>
+  <div class="shift-chips">
+    <span class="sc-m">● Morning · 09:00 – 14:00</span>
+    <span class="sc-a">● Afternoon · 13:00 – 19:00</span>
+    <span class="sc-c">● Closing · 17:00 – 21:00</span>
+  </div>
+  <p>Each tab shows the staff assigned to that shift. The <span class="ui">Summary</span> tab shows all three shift scores side by side plus the overall score.</p>
+
+  <h3>Staff cards</h3>
+  <p>Each staff card shows the person's name, role, and tags for seniority, languages spoken, and whether they have an active VIC client on this shift. Tap a card to expand it and see full details including their VIC client affiliations, gender, and seniority level.</p>
+
+  <h3>The overall score</h3>
+  <p>The score pill in the top-right corner shows today's overall roster score out of 100. Colour indicates quality:</p>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin:12px 0">
+    <div class="score-demo"><span class="score-num score-green">92</span><span class="score-label">/ 100 · Excellent</span></div>
+    <div class="score-demo"><span class="score-num score-amber">74</span><span class="score-label">/ 100 · Good</span></div>
+    <div class="score-demo"><span class="score-num score-red">61</span><span class="score-label">/ 100 · Needs attention</span></div>
+  </div>
+
+  <h3>VIC coverage panel</h3>
+  <p>When any VIC clients are configured, a panel above the shift tabs shows which advisor is covering each client across Morning, Afternoon, and Closing. A <span class="ui">Gap!</span> badge means that shift has no affiliated advisor assigned — consider enabling VIC Max or adjusting the roster manually.</p>
+
+  <h3>Fatigue alerts</h3>
+  <p>If the engine detects a staff member scheduled across too many consecutive shifts, a fatigue warning banner appears below the header with the person's name and a note on the risk level.</p>
+</section>
+
+<!-- SCORE -->
+<section class="section" id="score">
+  <p class="eyebrow">Scoring</p>
+  <h2>How the roster score is calculated</h2>
+  <p>Each shift is scored from 0 – 100 by the engine. The overall day score is the average of all three shifts. Five criteria contribute to the score, each with a configurable weight:</p>
+
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-head">
+        <span class="metric-dot" style="background:#1E4D8C"></span>
+        <span class="metric-label">Skill coverage</span>
+        <span class="metric-weight">35%</span>
+      </div>
+      <p class="metric-desc">All required roles are present — at least one Floor Manager, Sr. Stylist, VIC Advisor, and Cashier per shift.</p>
+    </div>
+    <div class="metric-card">
+      <div class="metric-head">
+        <span class="metric-dot" style="background:#C9A84C"></span>
+        <span class="metric-label">VIC affiliation</span>
+        <span class="metric-weight">25%</span>
+      </div>
+      <p class="metric-desc">Every active VIC client has at least one of their affiliated advisors on shift.</p>
+    </div>
+    <div class="metric-card">
+      <div class="metric-head">
+        <span class="metric-dot" style="background:#4A3280"></span>
+        <span class="metric-label">Gender balance</span>
+        <span class="metric-weight">15%</span>
+      </div>
+      <p class="metric-desc">No single gender makes up more than 70% of a shift's team.</p>
+    </div>
+    <div class="metric-card">
+      <div class="metric-head">
+        <span class="metric-dot" style="background:#0F6E56"></span>
+        <span class="metric-label">Seniority cover</span>
+        <span class="metric-weight">15%</span>
+      </div>
+      <p class="metric-desc">At least one senior staff member or manager is present on every shift.</p>
+    </div>
+    <div class="metric-card">
+      <div class="metric-head">
+        <span class="metric-dot" style="background:#993C1D"></span>
+        <span class="metric-label">Language coverage</span>
+        <span class="metric-weight">10%</span>
+      </div>
+      <p class="metric-desc">The team covers a diverse set of languages — ideally at least five across the shift.</p>
+    </div>
+  </div>
+
+  <div class="callout callout-tip">Weights are adjustable in the Admin panel under <strong>Weights</strong>. Moving any slider automatically redistributes the remaining weight across the others so the total always stays at 100%.</div>
+</section>
+
+<!-- VIC -->
+<section class="section" id="vic">
+  <p class="eyebrow">VIC Coverage</p>
+  <h2>Managing VIC client coverage</h2>
+  <p>VIC (Very Important Client) coverage is a core feature of the roster engine. Each VIC client can be linked to affiliated advisors — staff whose role qualifies them to serve that client (Floor Managers, Sr. Stylists, VIC Advisors).</p>
+
+  <h3>Reading the VIC panel</h3>
+  <p>On the roster view, the VIC panel shows one card per client. A coloured chip in each shift column means coverage is confirmed. An empty column means no affiliated advisor is on that shift.</p>
+
+  <div class="vic-example">
+    <div class="vic-ex-name"><span class="vic-ex-star">★</span> Mme Fontaine</div>
+    <div class="vic-ex-row"><span class="vic-ex-lbl">Morning</span><span class="sc-m">Layla Hassan</span></div>
+    <div class="vic-ex-row"><span class="vic-ex-lbl">Afternoon</span><span class="sc-a">Sophie Lam</span></div>
+    <div class="vic-ex-row"><span class="vic-ex-lbl">Closing</span><span class="sc-c">Mei Lin</span></div>
+  </div>
+
+  <h3>VIC Max mode</h3>
+  <p>The <span class="ui">☆ VIC Max</span> toggle in the top-right of the roster view re-runs the engine with VIC affiliation weighted more heavily. Use this when a high-priority client is visiting and you need to ensure coverage across all three shifts, even if it adjusts other assignments.</p>
+  <div class="callout callout-note">VIC Max does not override staff availability or "cannot work" flags. It only shifts how the optimiser prioritises assignments among available staff.</div>
+
+  <h3>Managing VIC clients</h3>
+  <p>Add, remove, and update VIC clients in the Admin panel under the <span class="ui">VIC clients</span> tab. You can set an expected visit date for scheduling awareness and assign or remove affiliated advisors directly from each client card.</p>
+</section>
+
+<!-- ADMIN -->
+<section class="section" id="admin">
+  <p class="eyebrow">Admin Panel</p>
+  <h2>The admin panel</h2>
+  <p>Access the admin panel by tapping the <span class="ui">Admin</span> button in the top-right of the roster view. The panel has five tabs:</p>
+
+  <div class="tab-list">
+    <div class="tab-row">
+      <span class="tab-name">Staff</span>
+      <span class="tab-desc">View, add, edit, and remove staff members. Configure roles, seniority, languages, available shifts, and "must work" / "cannot work" flags for today.</span>
+    </div>
+    <div class="tab-row">
+      <span class="tab-name">VIC clients</span>
+      <span class="tab-desc">Add and manage VIC client profiles. Set expected visit dates and link affiliated advisors to each client.</span>
+    </div>
+    <div class="tab-row">
+      <span class="tab-name">Weights</span>
+      <span class="tab-desc">Adjust the five scoring criteria weights with interactive sliders. Changes are saved to Supabase and apply to all future roster generations.</span>
+    </div>
+    <div class="tab-row">
+      <span class="tab-name">Roster planner</span>
+      <span class="tab-desc">Generate a roster, inspect per-shift scores and constraint violations, and drag staff between shifts before submitting for approval.</span>
+    </div>
+    <div class="tab-row">
+      <span class="tab-name">Publish</span>
+      <span class="tab-desc">Review rosters in the pending queue, approve or reject submissions, and browse the full roster history with status badges.</span>
+    </div>
+  </div>
+
+  <h3>Staff management</h3>
+  <p>Each staff record includes: name, role, seniority level (Junior / Senior / Manager), gender, languages spoken, available shifts, and a "cannot work today" flag. Use the search bar and role filter to find staff quickly. Edit inline by clicking the edit icon on any row.</p>
+
+  <div class="callout callout-warn">Setting <strong>Cannot work today</strong> on a staff member prevents the engine from assigning them to any shift in today's generation. Remember to clear this flag the following day.</div>
+
+  <h3>Adjusting weights</h3>
+  <p>On the Weights tab, drag a slider to change a criterion's contribution to the score. The other four sliders adjust automatically so the total stays at 100%. Click <span class="ui">Save weights</span> to write the configuration to Supabase. The updated weights take effect the next time a roster is generated.</p>
+</section>
+
+<!-- PUBLISH -->
+<section class="section" id="publish">
+  <p class="eyebrow">Publishing</p>
+  <h2>The roster approval workflow</h2>
+  <p>Rosters go through a four-state workflow before they are considered final:</p>
+
+  <div class="status-row">
+    <span class="status-pill st-pending">Pending review</span>
+    <span class="st-arrow">→</span>
+    <span class="status-pill st-approved">Approved</span>
+    <span class="st-arrow">→</span>
+    <span class="status-pill st-published">Published</span>
+    <br>
+    <span class="status-pill st-pending">Pending review</span>
+    <span class="st-arrow">→</span>
+    <span class="status-pill st-rejected">Rejected</span>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Generate &amp; review</h4>
+        <p>In the Roster Planner tab, generate a roster and review the per-shift constraint scorecards. Resolve any violations flagged in the panel (missing roles, VIC gaps) and adjust assignments if needed.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Submit for approval</h4>
+        <p>When satisfied, use the Publish button in the Roster Planner. This saves the roster to Supabase with status <span class="status-pill st-pending">Pending review</span>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Approve or reject</h4>
+        <p>A manager opens the <span class="ui">Publish</span> tab in the admin panel. Pending rosters appear in the queue. Approve to move the roster to <span class="status-pill st-approved">Approved</span>, or reject with a note to send it back.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Publish</h4>
+        <p>An approved roster can be published — setting status to <span class="status-pill st-published">Published</span>. Published rosters are locked and retained in history. The full log is visible at the bottom of the Publish tab.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIPS -->
+<section class="section" id="tips">
+  <p class="eyebrow">Tips</p>
+  <h2>Getting the most from the roster</h2>
+
+  <h3>Keep staff data current</h3>
+  <p>The engine can only optimise for what it knows. Update language lists when staff develop new language skills, and review the available shifts for each person after any contract changes.</p>
+
+  <h3>Use "Cannot work today" for ad-hoc absences</h3>
+  <p>For sick days or last-minute unavailability, set the <span class="ui">Cannot work today</span> toggle on the staff member in the Admin panel before generating the day's roster. This is separate from their base shift availability and resets with each session.</p>
+
+  <h3>Review VIC expected visit dates</h3>
+  <p>Setting an expected visit date on a VIC client record helps you notice when a client is due — but the engine uses affiliation, not dates, to determine coverage. Ensure affiliations are current.</p>
+
+  <h3>Calibrate weights to your boutique</h3>
+  <p>The default weights (Skill 35% · VIC 25% · Gender 15% · Seniority 15% · Language 10%) suit a general luxury boutique. If your store has a particularly multilingual clientele, increase Language coverage. If VIC visits are the highest priority, raise VIC affiliation.</p>
+
+  <h3>Check the Summary tab before publishing</h3>
+  <p>The <span class="ui">Summary</span> tab shows all three shift scores at a glance. If one shift scores significantly lower than the others, use the Roster Planner to investigate the constraint breakdown before submitting.</p>
+
+  <div class="callout callout-tip">The roster history is stored in Supabase and never deleted. You can review any previous roster from the Publish tab's history list, including the score and the full assignment payload.</div>
+</section>
+
+<div class="doc-footer">
+  <p>Maison Aurore Roster · React + TypeScript · Supabase + Vercel</p>
+  <p>v1.0 · Open source</p>
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
