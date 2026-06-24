@@ -1,10 +1,14 @@
 .admin-link {
-  font-size: 11px;
-  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 13px;
   border-radius: 20px;
-  border: 1.5px solid rgba(201,168,76,0.7);
-  color: var(--gold-light);
+  background: var(--gold);
+  color: var(--navy-deep);
+  border: none;
   text-decoration: none;
+  letter-spacing: 0.02em;
   transition: all 0.15s;
+  white-space: nowrap;
 }
-.admin-link:hover { border-color: var(--gold); color: var(--gold); }
+.admin-link:hover { background: var(--gold-light); }
