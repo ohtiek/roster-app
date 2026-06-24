@@ -93,7 +93,7 @@ function RosterApp() {
               <button className={`vic-toggle ${vicMode?'active':''}`} onClick={()=>{const n=!vicMode;setVicMode(n);run(n)}} disabled={loading}>
                 {vicMode?'★ VIC Max ON':'☆ VIC Max'}
               </button>
-              <Link to="/admin" className="admin-link">Admin ↗</Link>
+              <Link to="/admin" className="admin-link">Admin &rarr;</Link>
             </div>
           </div>
         </div>
