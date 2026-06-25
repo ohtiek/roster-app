@@ -35,14 +35,41 @@ function Tag({label,variant}:{label:string;variant:'role'|'lang'|'shift'|'vic'})
   return <span className={`tag tag-${variant}`}>{label}</span>
 }
 
-function Toggle({checked,onChange}:{checked:boolean;onChange:(v:boolean)=>void}) {
-  return <button role="switch" aria-checked={checked} className={`toggle ${checked?'on':''}`} onClick={()=>onChange(!checked)}/>
+function DateConstraintField({label, dates, onChange}: {label: string; dates: string[]; onChange: (d: string[]) => void}) {
+  const [input, setInput] = useState('')
+  function add() {
+    if (input && !dates.includes(input)) onChange([...dates, input].sort())
+    setInput('')
+  }
+  function fmt(d: string) {
+    return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})
+  }
+  return (
+    <div className="form-row">
+      <label>{label}</label>
+      <div className="date-constraint-field">
+        <div className="date-chip-row">
+          {dates.length === 0 && <span className="date-empty">No dates set</span>}
+          {dates.map(d => (
+            <span key={d} className="date-chip">
+              {fmt(d)}
+              <button type="button" className="date-chip-rm" onClick={() => onChange(dates.filter(x => x !== d))}>×</button>
+            </span>
+          ))}
+        </div>
+        <div className="date-add-row">
+          <input type="date" className="inp inp-date" value={input} onChange={e => setInput(e.target.value)}/>
+          <button type="button" className="btn bp btn-sm" onClick={add} disabled={!input}>Add</button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const EMPTY: Omit<StaffMember,'id'|'created_at'|'updated_at'> = {
   name:'', role:'Jr. Stylist', seniority:'junior', gender:'F',
   languages:['EN'], available_shifts:['morning','afternoon','closing'],
-  must_work:false, cannot_work:false, avatar_color:'av-b',
+  must_work_dates:[], cannot_work_dates:[], avatar_color:'av-b',
 }
 
 function StaffForm({value, onChange, vicClients}:{
@@ -120,10 +147,8 @@ function StaffForm({value, onChange, vicClients}:{
           <div style={{fontSize:12,color:'var(--muted)'}}>Assign advisors from the VIC Clients tab.</div>
         </div>
       )}
-      <div className="form-row-2">
-        <div className="form-row"><label>Must work today</label><Toggle checked={!!value.must_work} onChange={v=>set('must_work',v)}/></div>
-        <div className="form-row"><label>Cannot work today</label><Toggle checked={!!value.cannot_work} onChange={v=>set('cannot_work',v)}/></div>
-      </div>
+      <DateConstraintField label="Must work on dates" dates={value.must_work_dates ?? []} onChange={v=>set('must_work_dates',v)}/>
+      <DateConstraintField label="Cannot work on dates" dates={value.cannot_work_dates ?? []} onChange={v=>set('cannot_work_dates',v)}/>
     </div>
   )
 }

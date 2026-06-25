@@ -11,8 +11,8 @@ export interface StaffMember {
   gender: Gender
   languages: string[]
   available_shifts: ShiftName[]
-  must_work: boolean
-  cannot_work: boolean
+  must_work_dates: string[]
+  cannot_work_dates: string[]
   avatar_color: string
   created_at?: string
   updated_at?: string

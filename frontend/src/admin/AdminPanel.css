@@ -461,6 +461,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
 .toggle.on { background: var(--navy); }
 .toggle.on::after { transform: translateX(16px); }
 
+/* ── Date constraint field ── */
+.date-constraint-field { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.date-chip-row { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; align-items: center; }
+.date-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+.date-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(30,39,97,0.07); border: 0.5px solid rgba(30,39,97,0.15);
+  border-radius: 20px; padding: 3px 8px 3px 10px; font-size: 12px; font-weight: 500; color: var(--navy);
+}
+.date-chip-rm {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  font-size: 14px; line-height: 1; padding: 0 2px; transition: color 0.1s;
+}
+.date-chip-rm:hover { color: #791F1F; }
+.date-add-row { display: flex; gap: 8px; align-items: center; }
+.inp-date { width: 160px; flex-shrink: 0; }
+
 /* ── Modal ── */
 .modal-overlay {
   position: fixed;

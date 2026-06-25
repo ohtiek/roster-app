@@ -275,9 +275,10 @@ function StaffPill({ assignment, staff, vicClients, onRemove, onDragStart, onDra
 // ── Staff picker modal ────────────────────────────────────────────────────────
 
 function StaffPicker({
-  shift, allStaff, assignedIds, vicClients, onAdd, onClose,
+  shift, date, allStaff, assignedIds, vicClients, onAdd, onClose,
 }: {
   shift: ShiftName
+  date: string
   allStaff: StaffMember[]
   assignedIds: Set<string>
   vicClients: VICClient[]
@@ -288,7 +289,7 @@ function StaffPicker({
   const bench = allStaff.filter(s =>
     !assignedIds.has(s.id) &&
     s.available_shifts.includes(shift) &&
-    !s.cannot_work &&
+    !(s.cannot_work_dates ?? []).includes(date) &&
     (
       !search ||
       s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -936,6 +937,7 @@ export default function RosterPlannerTab() {
             {pickerShift && (
               <StaffPicker
                 shift={pickerShift}
+                date={selectedDate}
                 allStaff={allStaff}
                 assignedIds={assignedInShift(pickerShift)}
                 vicClients={vicClients}

@@ -109,13 +109,13 @@ export function generateRoster(
   weights: ScoringWeights,
   optimiseForVIC = false,
 ): RosterResponse {
-  const available = staff.filter(s => !s.cannot_work)
+  const available = staff.filter(s => !(s.cannot_work_dates ?? []).includes(date))
   const vicAdvisorIds = new Set(vicClients.flatMap(v => v.affiliated_advisor_ids))
   const shiftMap: Record<ShiftName, StaffMember[]> = { morning: [], afternoon: [], closing: [] }
   const assignedIds = new Set<string>()
 
   function priority(s: StaffMember): number {
-    return (s.must_work ? 100 : 0) +
+    return ((s.must_work_dates ?? []).includes(date) ? 100 : 0) +
       (optimiseForVIC && vicAdvisorIds.has(s.id) ? 20 : 0) +
       ({ 'Floor Manager': 5, 'VIC Advisor': 4, 'Sr. Stylist': 3, 'Jr. Stylist': 2, 'Cashier': 2, 'Stock Associate': 1 }[s.role] ?? 0) +
       s.languages.length
