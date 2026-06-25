@@ -215,12 +215,12 @@ function StaffTab({vicClients}:{vicClients:VICClient[]}) {
       <div className="cnt">{filtered.length} of {staff.length} staff · Supabase live</div>
       <div className="tbl-w">
         <table className="staff-table">
-          <thead><tr><th style={{width:200}}>Name</th><th style={{width:130}}>Role</th><th style={{width:75}}>Gender</th><th>Languages</th><th>VIC</th><th style={{width:90}}/></tr></thead>
+          <thead><tr><th style={{width:200}}>Name</th><th style={{width:130}}>Role</th><th style={{width:75}}>Gender</th><th style={{width:120}}>Languages</th><th style={{width:80}}/></tr></thead>
           <tbody>
             {filtered.map(s=>(
               editingId===s.id?(
                 <tr key={s.id} className="editing-row">
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="inline-edit">
                       <div className="inline-edit-hdr">
                         <Avatar staff={s}/>
@@ -240,7 +240,6 @@ function StaffTab({vicClients}:{vicClients:VICClient[]}) {
                   <td><Tag label={s.role} variant="role"/></td>
                   <td><span className="gen">{s.gender==='F'?'Female':s.gender==='M'?'Male':'NB'}</span></td>
                   <td><div className="tag-row">{s.languages.map(l=><Tag key={l} label={l} variant="lang"/>)}</div></td>
-                  <td><span className="dim">—</span></td>
                   <td><div className="ra">
                     <button className="ib" onClick={()=>{const {id,...rest}=s;setEditingId(id);setEditForm(rest)}} aria-label={`Edit ${s.name}`}><i className="ti ti-edit" aria-hidden="true"/></button>
                     <button className="ib d" onClick={()=>setConfirmDelete(s.id)} aria-label={`Delete ${s.name}`}><i className="ti ti-trash" aria-hidden="true"/></button>
