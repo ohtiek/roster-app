@@ -130,6 +130,15 @@ body {
   .app { box-shadow: 0 2px 40px rgba(0,0,0,0.08); }
 }
 
+/* Admin bar — sits below sticky header, above date-bar */
+.admin-bar {
+  background: var(--surface);
+  padding: 5px 16px;
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 0.5px solid var(--rule);
+}
+
 /* Demo-mode client switcher — only rendered when ?demo=true */
 .client-switcher {
   position: fixed;
@@ -177,7 +186,8 @@ body {
 
 @media print {
   .sticky-hdr { position: static; }
-  .tab-bar, .fab { display: none; }
+  .tab-bar, .fab, .client-switcher, .admin-bar { display: none; }
   .panel { display: block !important; }
+  .panel + .panel { break-before: page; }
   body { padding-bottom: 0; background: white; }
 }

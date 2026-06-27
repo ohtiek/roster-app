@@ -89,7 +89,7 @@ function Tag({ label, variant }: {
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', width: 90, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{label}</span>
       <div style={{
         flex: 1, height: 7, background: 'var(--color-background-secondary)',
         borderRadius: 4, overflow: 'hidden', border: '0.5px solid var(--color-border-tertiary)',
@@ -300,10 +300,10 @@ function StaffPicker({
   return (
     <div
       style={{
-        position: 'absolute', inset: 0,
-        background: 'rgba(20,29,74,0.45)',
+        position: 'fixed', inset: 0,
+        background: 'rgba(20,29,74,0.55)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 50, borderRadius: 'var(--border-radius-lg)',
+        zIndex: 200,
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
@@ -311,7 +311,7 @@ function StaffPicker({
         background: 'var(--color-background-primary)',
         borderRadius: 'var(--border-radius-lg)',
         border: '0.5px solid var(--color-border-tertiary)',
-        width: 340, maxHeight: 480,
+        width: 'min(340px, calc(100vw - 32px))', maxHeight: 480,
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
@@ -699,7 +699,7 @@ export default function RosterPlannerTab() {
     return (
       <div style={{ padding: '2rem', color: 'var(--color-text-secondary)', fontSize: 14 }}>
         <i className="ti ti-loader" aria-hidden="true" style={{ marginRight: 8 }} />
-        Loading staff and VIC data from Supabase…
+        Loading data…
       </div>
     )
   }
@@ -911,11 +911,12 @@ export default function RosterPlannerTab() {
 
           {/* ── Three-column shift board ── */}
           <div style={{ position: 'relative' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
-              gap: 10, marginBottom: 14,
-            }}>
+            <div style={{ overflowX: 'auto', marginBottom: 14 }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3,minmax(160px,1fr))',
+                gap: 10, minWidth: 500,
+              }}>
               {SHIFTS.map(shift => (
                 <ShiftColumn
                   key={shift}
@@ -931,6 +932,7 @@ export default function RosterPlannerTab() {
                   onDrop={e => handleDrop(e, shift)}
                 />
               ))}
+              </div>
             </div>
 
             {/* Staff picker */}
