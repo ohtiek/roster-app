@@ -11,6 +11,8 @@ Run these in order in the Supabase SQL editor (Dashboard → SQL Editor → New 
 | `005_cleanup_legacy_columns.sql` | **Run after app deploy** — drops old free-text `approved_by`, `published_by`, `rejected_by` columns |
 | `006_dynamic_shifts.sql` | Creates `boutique_shifts` (per-boutique shift definitions, time-bounded) and `staff_shift_availability` (replaces `staff.available_shifts TEXT[]`); seeds default three shifts; backfills staff availability from legacy column; adds partial unique index for one published roster per boutique per date |
 | `007_cleanup_available_shifts.sql` | **Run after app deploy** — drops legacy `staff.available_shifts` column |
+| `008_flexible_skills_and_unavailability.sql` | Creates `skill_types` (replaces hardcoded Role enum and engine constants), `staff_skills` (multi-skill support), `boutique_shift_requirements` (replaces hardcoded SHIFT_MIN), `staff_unavailability` (hour-level blocks with leave-system source tracking, replaces `cannot_work_dates`), `staff_required_work` (replaces `must_work_dates`); backfills all new tables from legacy columns |
+| `009_cleanup_legacy_staff_columns.sql` | **Run after app deploy** — drops legacy `staff.role`, `staff.cannot_work_dates`, `staff.must_work_dates` columns |
 
 ## After running migrations
 
