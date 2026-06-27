@@ -13,6 +13,12 @@ Run these in order in the Supabase SQL editor (Dashboard → SQL Editor → New 
 | `007_cleanup_available_shifts.sql` | **Run after app deploy** — drops legacy `staff.available_shifts` column |
 | `008_flexible_skills_and_unavailability.sql` | Creates `skill_types` (replaces hardcoded Role enum and engine constants), `staff_skills` (multi-skill support), `boutique_shift_requirements` (replaces hardcoded SHIFT_MIN), `staff_unavailability` (hour-level blocks with leave-system source tracking, replaces `cannot_work_dates`), `staff_required_work` (replaces `must_work_dates`); backfills all new tables from legacy columns |
 | `009_cleanup_legacy_staff_columns.sql` | **Run after app deploy** — drops legacy `staff.role`, `staff.cannot_work_dates`, `staff.must_work_dates` columns |
+| `010_core_corrections.sql` | Adds `staff.user_id` (auth identity for self-service); RLS policies for staff self-service on own unavailability; adds `parent_roster_id`, `amended_at`, `amended_by_id` to `roster_history`; adds `published_amended` status; trigger to auto-archive superseded published rosters on amendment publish |
+| `011_boutique_operational_config.sql` | Creates `regions` table; extends `boutiques` with `address`, `store_code`, `region_id`; creates `boutique_closures` (planned closure and holiday dates); creates `boutique_engine_config` (per-boutique engine tuning replacing hardcoded TypeScript constants); adds `max_count` to `boutique_shift_requirements`; creates `boutique_shift_day_overrides` (day-of-week staffing overrides) |
+| `012_staff_employment.sql` | Adds `employment_type` and `contracted_hours_per_week` to `staff`; adds `leave_type` to `staff_unavailability` |
+| `013_approval_workflow.sql` | Adds `submit_deadline` and `approve_deadline` to `roster_history`; adds `approver_delegate_id` to `user_boutique_roles` |
+| `014_vic_appointments_and_loans.sql` | Adds `tier` and `preferred_languages` to `vic_clients`; creates `vic_appointments` (individual confirmed/tentative visit slots per boutique per date); adds `is_loan` and `home_boutique_id` to `staff_boutiques` |
+| `015_audit_analytics_views.sql` | Creates `audit_log` with SECURITY DEFINER triggers on sensitive tables; creates `scoring_weights_history` (snapshot on every weight change); creates `roster_actuals` (planned vs actual attendance); creates `active_staff_skills` view (auto-excludes expired skill certifications) |
 
 ## After running migrations
 
