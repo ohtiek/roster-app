@@ -251,38 +251,44 @@ function RejectModal({ onConfirm, onClose }: {
   const [notes, setNotes] = useState('')
   return createPortal(
     <div style={{
-      position:'fixed', inset:0, background:'rgba(10,15,40,0.95)',
+      position:'fixed', inset:0, background:'rgba(10,15,40,0.75)',
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
-        background:'var(--color-background-primary)',
-        border:'0.5px solid var(--color-border-tertiary)',
-        borderRadius:'var(--border-radius-lg)',
-        padding:20, width:'min(340px, calc(100vw - 32px))',
+        background:'#ffffff', borderRadius:12,
+        boxShadow:'0 24px 64px rgba(0,0,0,0.35)',
+        width:'min(360px, calc(100vw - 32px))',
+        overflow:'hidden',
       }}>
-        <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)', marginBottom:6 }}>Reject roster</div>
-        <div style={{ fontSize:13, color:'var(--color-text-secondary)', marginBottom:12, lineHeight:1.5 }}>
-          This returns the plan to the planner. Optionally add a note for the planner.
+        <div style={{ background:'#C0392B', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <i className="ti ti-x" aria-hidden="true" style={{ fontSize:16, color:'white' }} />
+            <span style={{ fontSize:15, fontWeight:600, color:'white' }}>Reject roster</span>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.7)', fontSize:18, lineHeight:1, padding:0 }}>×</button>
         </div>
-        <textarea
-          autoFocus
-          placeholder="e.g. Closing shift needs a VIC advisor. Please add Lucas Park."
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          style={{
-            width:'100%', height:80, fontSize:13, fontFamily:'inherit',
-            border:'0.5px solid var(--color-border-secondary)',
-            borderRadius:'var(--border-radius-md)', padding:'8px 10px',
-            resize:'none', outline:'none',
-            background:'var(--color-background-secondary)',
-            color:'var(--color-text-primary)',
-          }}
-        />
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:12 }}>
-          <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:'var(--border-radius-md)', border:'0.5px solid var(--color-border-secondary)', background:'transparent', fontSize:13, cursor:'pointer', fontFamily:'inherit', color:'var(--color-text-primary)' }}>Cancel</button>
-          <button onClick={() => onConfirm(notes)} style={{ padding:'7px 14px', borderRadius:'var(--border-radius-md)', border:'none', background:'#E24B4A', color:'white', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-x" aria-hidden="true" style={{ fontSize:13 }} /> Reject
-          </button>
+        <div style={{ padding:'18px 20px 20px' }}>
+          <p style={{ fontSize:13, color:'#555', marginBottom:14, lineHeight:1.5 }}>
+            This returns the plan to the planner. Optionally add a note explaining what needs to change.
+          </p>
+          <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', color:'#888', display:'block', marginBottom:6 }}>Note (optional)</label>
+          <textarea
+            autoFocus
+            placeholder="e.g. Closing shift needs a VIC advisor. Please add Lucas Park."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            style={{
+              width:'100%', height:88, fontSize:13, fontFamily:'inherit',
+              border:'1px solid #ddd', borderRadius:8, padding:'9px 11px',
+              resize:'none', outline:'none', background:'#f9f9f9', color:'#1a1a1a',
+            }}
+          />
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:14 }}>
+            <button onClick={onClose} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer', fontFamily:'inherit', color:'#444' }}>Cancel</button>
+            <button onClick={() => onConfirm(notes)} style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'#C0392B', color:'white', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:6 }}>
+              <i className="ti ti-x" aria-hidden="true" style={{ fontSize:13 }} /> Reject roster
+            </button>
+          </div>
         </div>
       </div>
     </div>,
@@ -302,62 +308,69 @@ function ApproveModal({
 }) {
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
-  const hasError = checks.some(c => !c.ok)
   return createPortal(
     <div style={{
-      position:'fixed', inset:0, background:'rgba(10,15,40,0.95)',
+      position:'fixed', inset:0, background:'rgba(10,15,40,0.75)',
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
-        background:'var(--color-background-primary)',
-        border:'0.5px solid var(--color-border-tertiary)',
-        borderRadius:'var(--border-radius-lg)',
-        padding:20, width:'min(380px, calc(100vw - 32px))',
+        background:'#ffffff', borderRadius:12,
+        boxShadow:'0 24px 64px rgba(0,0,0,0.35)',
+        width:'min(400px, calc(100vw - 32px))',
+        overflow:'hidden',
       }}>
-        <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)', marginBottom:6 }}>Approve roster</div>
-        <div style={{ fontSize:13, color:'var(--color-text-secondary)', marginBottom:12, lineHeight:1.5 }}>
-          Approving enables publishing. Check all items below before proceeding.
+        <div style={{ background:'#1E2761', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <i className="ti ti-check" aria-hidden="true" style={{ fontSize:16, color:'#C9A84C' }} />
+            <span style={{ fontSize:15, fontWeight:600, color:'white' }}>Approve roster</span>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.7)', fontSize:18, lineHeight:1, padding:0 }}>×</button>
         </div>
+        <div style={{ padding:'18px 20px 20px' }}>
+          <p style={{ fontSize:13, color:'#555', marginBottom:14, lineHeight:1.5 }}>
+            Approving enables publishing. Check all items below before proceeding.
+          </p>
 
-        <div style={{ marginBottom:14, display:'flex', flexDirection:'column', gap:6 }}>
-          {checks.map((c,i) => (
-            <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12, color:'var(--color-text-secondary)', lineHeight:1.4 }}>
-              <i className={`ti ${c.ok ? 'ti-check' : 'ti-alert-triangle'}`} aria-hidden="true" style={{ fontSize:14, color: c.ok ? '#27500A' : '#BA7517', flexShrink:0, marginTop:1 }} />
-              {c.label}
-            </div>
-          ))}
-        </div>
+          <div style={{ background:'#f7f5ef', border:'1px solid #e0ddd4', borderRadius:8, padding:'10px 12px', marginBottom:16, display:'flex', flexDirection:'column', gap:8 }}>
+            {checks.map((c,i) => (
+              <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:13, color:'#1a1a1a', lineHeight:1.4 }}>
+                <i className={`ti ${c.ok ? 'ti-check' : 'ti-alert-triangle'}`} aria-hidden="true" style={{ fontSize:14, color: c.ok ? '#27500A' : '#BA7517', flexShrink:0, marginTop:1 }} />
+                {c.label}
+              </div>
+            ))}
+          </div>
 
-        <div style={{ marginBottom:10 }}>
-          <label style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.06em', color:'var(--color-text-secondary)', display:'block', marginBottom:4 }}>Your name</label>
-          <input
-            autoFocus
-            placeholder="e.g. Sophie Lam"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            style={{ width:'100%', height:32, fontSize:13, fontFamily:'inherit', border:'0.5px solid var(--color-border-secondary)', borderRadius:'var(--border-radius-md)', padding:'0 10px', outline:'none', background:'var(--color-background-secondary)', color:'var(--color-text-primary)' }}
-          />
-        </div>
+          <div style={{ marginBottom:12 }}>
+            <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', color:'#888', display:'block', marginBottom:6 }}>Your name</label>
+            <input
+              autoFocus
+              placeholder="e.g. Sophie Lam"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              style={{ width:'100%', height:36, fontSize:13, fontFamily:'inherit', border:'1px solid #ddd', borderRadius:8, padding:'0 11px', outline:'none', background:'#f9f9f9', color:'#1a1a1a' }}
+            />
+          </div>
 
-        <div style={{ marginBottom:14 }}>
-          <label style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.06em', color:'var(--color-text-secondary)', display:'block', marginBottom:4 }}>Note (optional)</label>
-          <input
-            placeholder="e.g. Confirmed fatigue exemption for Lucas"
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            style={{ width:'100%', height:32, fontSize:13, fontFamily:'inherit', border:'0.5px solid var(--color-border-secondary)', borderRadius:'var(--border-radius-md)', padding:'0 10px', outline:'none', background:'var(--color-background-secondary)', color:'var(--color-text-primary)' }}
-          />
-        </div>
+          <div style={{ marginBottom:18 }}>
+            <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', color:'#888', display:'block', marginBottom:6 }}>Note (optional)</label>
+            <input
+              placeholder="e.g. Confirmed fatigue exemption for Lucas"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              style={{ width:'100%', height:36, fontSize:13, fontFamily:'inherit', border:'1px solid #ddd', borderRadius:8, padding:'0 11px', outline:'none', background:'#f9f9f9', color:'#1a1a1a' }}
+            />
+          </div>
 
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-          <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:'var(--border-radius-md)', border:'0.5px solid var(--color-border-secondary)', background:'transparent', fontSize:13, cursor:'pointer', fontFamily:'inherit', color:'var(--color-text-primary)' }}>Cancel</button>
-          <button
-            onClick={() => name.trim() && onConfirm(name.trim(), notes)}
-            disabled={!name.trim()}
-            style={{ padding:'7px 14px', borderRadius:'var(--border-radius-md)', border:'none', background: name.trim() ? '#1E2761' : 'var(--color-border-tertiary)', color:'white', fontSize:13, fontWeight:500, cursor: name.trim() ? 'pointer' : 'default', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}
-          >
-            <i className="ti ti-check" aria-hidden="true" style={{ fontSize:13 }} /> Approve plan
-          </button>
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+            <button onClick={onClose} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer', fontFamily:'inherit', color:'#444' }}>Cancel</button>
+            <button
+              onClick={() => name.trim() && onConfirm(name.trim(), notes)}
+              disabled={!name.trim()}
+              style={{ padding:'8px 16px', borderRadius:8, border:'none', background: name.trim() ? '#1E2761' : '#ccc', color:'white', fontSize:13, fontWeight:600, cursor: name.trim() ? 'pointer' : 'default', fontFamily:'inherit', display:'flex', alignItems:'center', gap:6 }}
+            >
+              <i className="ti ti-check" aria-hidden="true" style={{ fontSize:13 }} /> Approve plan
+            </button>
+          </div>
         </div>
       </div>
     </div>,
@@ -377,55 +390,58 @@ function PublishModal({
   const [name, setName] = useState('')
   return createPortal(
     <div style={{
-      position:'fixed', inset:0, background:'rgba(10,15,40,0.95)',
+      position:'fixed', inset:0, background:'rgba(10,15,40,0.75)',
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
-        background:'var(--color-background-primary)',
-        border:'0.5px solid #C9A84C',
-        borderRadius:'var(--border-radius-lg)',
-        padding:20, width:'min(360px, calc(100vw - 32px))',
+        background:'#ffffff', borderRadius:12,
+        boxShadow:'0 24px 64px rgba(0,0,0,0.35)',
+        width:'min(380px, calc(100vw - 32px))',
+        overflow:'hidden',
       }}>
-        <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)', marginBottom:6 }}>
-          <i className="ti ti-send" aria-hidden="true" style={{ marginRight:6, color:'#C9A84C' }} />
-          Publish roster
-        </div>
-        <div style={{ fontSize:13, color:'var(--color-text-secondary)', marginBottom:12, lineHeight:1.5 }}>
-          This makes the roster live on the store front-end. This action cannot be undone.
-        </div>
-
-        <div style={{ background:'#F5F0E8', border:'0.5px solid #C9A84C', borderRadius:'var(--border-radius-md)', padding:'10px 12px', marginBottom:14 }}>
-          <div style={{ fontSize:12, color:'#7A5C1E', marginBottom:6, fontWeight:500 }}>
-            {fmtDate(roster.roster_date)}
+        <div style={{ background:'#C9A84C', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <i className="ti ti-send" aria-hidden="true" style={{ fontSize:16, color:'#fff' }} />
+            <span style={{ fontSize:15, fontWeight:600, color:'#fff' }}>Publish roster</span>
           </div>
-          <div style={{ fontSize:12, color:'#7A5C1E' }}>
-            Score {safeScore(roster.overall_score)}/100 · {roster.override_count ?? 0} override{(roster.override_count ?? 0) !== 1 ? 's' : ''}
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.7)', fontSize:18, lineHeight:1, padding:0 }}>×</button>
+        </div>
+        <div style={{ padding:'18px 20px 20px' }}>
+          <p style={{ fontSize:13, color:'#555', marginBottom:14, lineHeight:1.5 }}>
+            This makes the roster live on the store front-end. This action cannot be undone.
+          </p>
+
+          <div style={{ background:'#F5F0E8', border:'1px solid #C9A84C', borderRadius:8, padding:'11px 14px', marginBottom:16 }}>
+            <div style={{ fontSize:13, color:'#7A5C1E', marginBottom:4, fontWeight:600 }}>{fmtDate(roster.roster_date)}</div>
+            <div style={{ fontSize:12, color:'#7A5C1E' }}>
+              Score {safeScore(roster.overall_score)}/100 · {roster.override_count ?? 0} override{(roster.override_count ?? 0) !== 1 ? 's' : ''}
+            </div>
+            {roster.notes && (
+              <div style={{ fontSize:12, color:'#7A5C1E', marginTop:4, fontStyle:'italic' }}>"{roster.notes}"</div>
+            )}
           </div>
-          {roster.notes && (
-            <div style={{ fontSize:12, color:'#7A5C1E', marginTop:4, fontStyle:'italic' }}>"{roster.notes}"</div>
-          )}
-        </div>
 
-        <div style={{ marginBottom:14 }}>
-          <label style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.06em', color:'var(--color-text-secondary)', display:'block', marginBottom:4 }}>Published by</label>
-          <input
-            autoFocus
-            placeholder="e.g. Sophie Lam"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            style={{ width:'100%', height:32, fontSize:13, fontFamily:'inherit', border:'0.5px solid var(--color-border-secondary)', borderRadius:'var(--border-radius-md)', padding:'0 10px', outline:'none', background:'var(--color-background-secondary)', color:'var(--color-text-primary)' }}
-          />
-        </div>
+          <div style={{ marginBottom:18 }}>
+            <label style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', color:'#888', display:'block', marginBottom:6 }}>Published by</label>
+            <input
+              autoFocus
+              placeholder="e.g. Sophie Lam"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              style={{ width:'100%', height:36, fontSize:13, fontFamily:'inherit', border:'1px solid #ddd', borderRadius:8, padding:'0 11px', outline:'none', background:'#f9f9f9', color:'#1a1a1a' }}
+            />
+          </div>
 
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-          <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:'var(--border-radius-md)', border:'0.5px solid var(--color-border-secondary)', background:'transparent', fontSize:13, cursor:'pointer', fontFamily:'inherit', color:'var(--color-text-primary)' }}>Cancel</button>
-          <button
-            onClick={() => name.trim() && onConfirm(name.trim())}
-            disabled={!name.trim()}
-            style={{ padding:'7px 14px', borderRadius:'var(--border-radius-md)', border:'none', background: name.trim() ? '#0F6E56' : 'var(--color-border-tertiary)', color:'white', fontSize:13, fontWeight:500, cursor: name.trim() ? 'pointer' : 'default', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}
-          >
-            <i className="ti ti-send" aria-hidden="true" style={{ fontSize:13 }} /> Publish now
-          </button>
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+            <button onClick={onClose} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer', fontFamily:'inherit', color:'#444' }}>Cancel</button>
+            <button
+              onClick={() => name.trim() && onConfirm(name.trim())}
+              disabled={!name.trim()}
+              style={{ padding:'8px 16px', borderRadius:8, border:'none', background: name.trim() ? '#0F6E56' : '#ccc', color:'white', fontSize:13, fontWeight:600, cursor: name.trim() ? 'pointer' : 'default', fontFamily:'inherit', display:'flex', alignItems:'center', gap:6 }}
+            >
+              <i className="ti ti-send" aria-hidden="true" style={{ fontSize:13 }} /> Publish now
+            </button>
+          </div>
         </div>
       </div>
     </div>,
