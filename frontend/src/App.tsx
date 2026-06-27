@@ -4,12 +4,12 @@ import type { RosterResponse, ShiftName, ShiftAssignment } from './types'
 import { fetchStaff, fetchVICClients, fetchWeights, saveRosterHistory } from './supabaseClient'
 import { generateRoster } from './engine'
 import AdminPanel from './admin/AdminPanel'
+import { ThemeProvider, useTheme } from './ThemeProvider'
+import { ClientSwitcher } from './ClientSwitcher'
 import './App.css'
 
 const SHIFT_LABELS: Record<ShiftName, string> = { morning:'Morning', afternoon:'Afternoon', closing:'Closing' }
 const SHIFT_TIMES:  Record<ShiftName, string> = { morning:'09:00–14:00', afternoon:'13:00–19:00', closing:'17:00–21:00' }
-const SHIFT_COLOR:  Record<ShiftName, string> = { morning:'#1E4D8C', afternoon:'#4A3280', closing:'#0F6E56' }
-const SHIFT_DOT:    Record<ShiftName, string> = { morning:'#5B8FCC', afternoon:'#9B85D4', closing:'#3DB88A' }
 const SHIFTS: ShiftName[] = ['morning', 'afternoon', 'closing']
 const AVC: Record<string,[string,string]> = {
   'av-b':['#DDEAF8','#1E4D8C'],'av-p':['#EEEDFE','#3C3489'],'av-t':['#D8EEE8','#085041'],
@@ -25,6 +25,18 @@ function Avatar({ code, name, size=40 }: { code?:string; name:string; size?:numb
 type TabId = ShiftName | 'summary'
 
 function RosterApp() {
+  const theme = useTheme()
+  const SHIFT_COLOR: Record<ShiftName, string> = {
+    morning:   theme.shifts.morning.bg,
+    afternoon: theme.shifts.afternoon.bg,
+    closing:   theme.shifts.closing.bg,
+  }
+  const SHIFT_DOT: Record<ShiftName, string> = {
+    morning:   theme.shifts.morning.dot,
+    afternoon: theme.shifts.afternoon.dot,
+    closing:   theme.shifts.closing.dot,
+  }
+
   const [tab,setTab]         = useState<TabId>('morning')
   const [vicMode,setVicMode] = useState(false)
   const [roster,setRoster]   = useState<RosterResponse|null>(null)
@@ -86,7 +98,7 @@ function RosterApp() {
     <div className="app">
       <div className="sticky-hdr">
         <div className="hdr-top">
-          <div><div className="eyebrow">Daily Roster</div><div className="store-name">Maison Aurore</div></div>
+          <div><div className="eyebrow">{theme.eyebrow}</div><div className="store-name">{theme.storeName}</div></div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
             {roster && <div className="score-pill" style={{color:scoreColor(roster.overall_score)}}>{roster.overall_score} / 100</div>}
             <div style={{display:'flex',gap:6}}>
@@ -106,7 +118,7 @@ function RosterApp() {
             </button>
           ))}
           <button className={`tab-btn ${tab==='summary'?'active':''}`} onClick={()=>setTab('summary')}>
-            <span className="tab-dot" style={{background:'#C9A84C'}}/>Summary
+            <span className="tab-dot" style={{background:theme.colors.accent}}/>Summary
           </button>
         </div>
       </div>
@@ -218,17 +230,21 @@ function RosterApp() {
       )}
 
       <button className="fab" onClick={()=>window.print()}>🖨 Print</button>
+      <ClientSwitcher/>
     </div>
   )
 }
 
 export default function App() {
+  const themeId = new URLSearchParams(window.location.search).get('client') ?? 'default'
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/admin/*" element={<AdminPanel/>}/>
-        <Route path="/*"       element={<RosterApp/>}/>
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider themeId={themeId}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/admin/*" element={<AdminPanel/>}/>
+          <Route path="/*"       element={<RosterApp/>}/>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }

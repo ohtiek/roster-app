@@ -130,6 +130,51 @@ body {
   .app { box-shadow: 0 2px 40px rgba(0,0,0,0.08); }
 }
 
+/* Demo-mode client switcher — only rendered when ?demo=true */
+.client-switcher {
+  position: fixed;
+  bottom: 20px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: blur(8px);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 24px;
+  padding: 6px 10px;
+  z-index: 300;
+  font-family: 'DM Sans', sans-serif;
+}
+.cs-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  padding-right: 4px;
+}
+.cs-btn {
+  background: rgba(255,255,255,0.08);
+  border: 0.5px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.cs-btn:hover { background: rgba(255,255,255,0.16); color: white; }
+.cs-btn.cs-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+  font-weight: 600;
+}
+
 @media print {
   .sticky-hdr { position: static; }
   .tab-bar, .fab { display: none; }
