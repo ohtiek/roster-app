@@ -23,6 +23,8 @@ export function ThemeProvider({ themeId, children }: { themeId: string; children
     r.style.setProperty('--gold-light',  c.accentLight)
     r.style.setProperty('--gold-lt',     c.accentLight)
     r.style.setProperty('--gold-dim',    `rgba(${hexRgb(c.accent)},0.15)`)
+    r.style.setProperty('--gold-a40',   `rgba(${hexRgb(c.accent)},0.4)`)
+    r.style.setProperty('--gold-a60',   `rgba(${hexRgb(c.accent)},0.6)`)
     r.style.setProperty('--cream',       c.background)
     r.style.setProperty('--surface',     c.surface)
     r.style.setProperty('--surface2',    c.surface2)

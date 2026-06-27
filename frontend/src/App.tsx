@@ -101,12 +101,9 @@ function RosterApp() {
           <div><div className="eyebrow">{theme.eyebrow}</div><div className="store-name">{theme.storeName}</div></div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
             {roster && <div className="score-pill" style={{color:scoreColor(roster.overall_score)}}>{roster.overall_score} / 100</div>}
-            <div style={{display:'flex',gap:6}}>
-              <button className={`vic-toggle ${vicMode?'active':''}`} onClick={()=>{const n=!vicMode;setVicMode(n);run(n)}} disabled={loading}>
-                {vicMode?'★ VIC Max ON':'☆ VIC Max'}
-              </button>
-              <Link to="/admin" className="admin-link">Admin &rarr;</Link>
-            </div>
+            <button className={`vic-toggle ${vicMode?'active':''}`} onClick={()=>{const n=!vicMode;setVicMode(n);run(n)}} disabled={loading}>
+              {vicMode?'★ VIC Max ON':'☆ VIC Max'}
+            </button>
           </div>
         </div>
         <div className="gold-rule"/>
@@ -123,16 +120,20 @@ function RosterApp() {
         </div>
       </div>
 
+      <div className="admin-bar">
+        <Link to="/admin" className="admin-link">Admin panel &rarr;</Link>
+      </div>
+
       <div className="date-bar">
         <div className="date-str">{roster?new Date(roster.date+'T00:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—'}</div>
         <div className="meta-chips">
           <span className="chip"><strong>{roster?.assignments.length??'—'}</strong> staff</span>
-          <span className="chip">{loading?'Loading…':'Live · Supabase'}</span>
+          <span className="chip">{loading?'Loading…':'Live'}</span>
         </div>
       </div>
 
       {loading && <div className="loading-bar"/>}
-      {error && <div className="error-banner">⚠ {error} — check your .env Supabase credentials</div>}
+      {error && <div className="error-banner">⚠ {error}</div>}
 
       {roster?.fatigue_flags && roster.fatigue_flags.length>0 && (
         <div className="fatigue-notice">
@@ -158,8 +159,8 @@ function RosterApp() {
         </div>
       )}
 
-      {SHIFTS.map(shift => tab===shift && roster && (
-        <div key={shift} className="panel">
+      {roster && SHIFTS.map(shift => (
+        <div key={shift} className="panel" style={{display: tab===shift ? undefined : 'none'}}>
           <div className="shift-hdr" style={{background:SHIFT_COLOR[shift]}}>
             <div className="score-ring" style={{color:scoreColor(getScore(shift))}}>{getScore(shift)}</div>
             <div><div className="sh-title">{SHIFT_LABELS[shift]} Shift</div><div className="sh-time">{SHIFT_TIMES[shift]}</div></div>
@@ -208,8 +209,8 @@ function RosterApp() {
         </div>
       ))}
 
-      {tab==='summary'&&roster&&(
-        <div className="panel">
+      {roster&&(
+        <div className="panel" style={{display: tab==='summary' ? undefined : 'none'}}>
           <div style={{padding:'12px 16px 0',fontSize:10,fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--color-text-secondary)'}}>Constraint scores</div>
           <div className="summary-grid">
             {roster.shift_scores.map(ss=>(
@@ -223,7 +224,6 @@ function RosterApp() {
             <div className="sg-card" style={{gridColumn:'span 2'}}>
               <div className="sg-label">Overall score</div>
               <div className="sg-val" style={{color:scoreColor(roster.overall_score),fontSize:28}}>{roster.overall_score} / 100</div>
-              <div className="sg-sub">Engine: {roster.solver_used} · Supabase + Vercel</div>
             </div>
           </div>
         </div>
