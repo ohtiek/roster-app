@@ -1,51 +1,87 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Migration 003 · Add boutique_id to existing tables
 --
--- Adds boutique_id (nullable first, then NOT NULL after backfill) to:
---   staff, vic_clients, vic_advisors (via vic_clients), scoring_weights,
---   roster_history
+-- Staff and VIC clients are global entities that can be linked to multiple
+-- boutiques. The boutique relationship is modelled as many-to-many via
+-- junction tables, NOT as a boutique_id column on the entity itself.
+-- The roster plan (roster_history) is what captures which staff were
+-- actually assigned at a specific boutique on a specific date.
+--
+-- New junction tables:
+--   staff_boutiques       — which boutiques a staff member is eligible for
+--   vic_client_boutiques  — which boutiques a VIC client visits
+--
+-- vic_advisors gains boutique_id, becoming a three-way junction:
+--   (vic_client_id, boutique_id, staff_id)
+--   — because the advisor for a client may differ per boutique
+--
+-- scoring_weights and roster_history are one-per-boutique and keep a direct
+-- boutique_id FK (correct as-is).
 --
 -- Also:
---   · Adds created_by UUID to roster_history (replaces free-text author tracking)
+--   · Adds created_by UUID to roster_history
 --   · Adds approved_by_id / published_by_id / rejected_by_id as UUID columns
---     alongside the old text columns (old columns dropped in a later cleanup)
+--     alongside the old text columns (dropped in migration 005 post-deploy)
 --   · Adds 'draft', 'submitted', 'archived' to the status check constraint
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- ── staff ─────────────────────────────────────────────────────────────────────
-ALTER TABLE staff
-  ADD COLUMN boutique_id UUID REFERENCES boutiques(id) ON DELETE CASCADE;
-
--- Backfill all existing staff to the default boutique
-UPDATE staff SET boutique_id = '00000000-0000-0000-0000-000000000001'
-  WHERE boutique_id IS NULL;
-
-ALTER TABLE staff
-  ALTER COLUMN boutique_id SET NOT NULL;
-
-CREATE INDEX staff_boutique_id_idx ON staff (boutique_id);
-
+-- ── updated_at trigger on staff and vic_clients ───────────────────────────────
 CREATE TRIGGER staff_updated_at
   BEFORE UPDATE ON staff
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
--- ── vic_clients ───────────────────────────────────────────────────────────────
-ALTER TABLE vic_clients
-  ADD COLUMN boutique_id UUID REFERENCES boutiques(id) ON DELETE CASCADE;
-
-UPDATE vic_clients SET boutique_id = '00000000-0000-0000-0000-000000000001'
-  WHERE boutique_id IS NULL;
-
-ALTER TABLE vic_clients
-  ALTER COLUMN boutique_id SET NOT NULL;
-
-CREATE INDEX vic_clients_boutique_id_idx ON vic_clients (boutique_id);
 
 CREATE TRIGGER vic_clients_updated_at
   BEFORE UPDATE ON vic_clients
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- vic_advisors inherits boutique scope from vic_clients — no column needed here
+-- ── staff_boutiques ───────────────────────────────────────────────────────────
+-- Many-to-many: a staff member can be eligible to work at multiple boutiques.
+-- The roster engine for boutique X only considers staff with a row here.
+CREATE TABLE staff_boutiques (
+  staff_id    UUID NOT NULL REFERENCES staff(id)      ON DELETE CASCADE,
+  boutique_id UUID NOT NULL REFERENCES boutiques(id)  ON DELETE CASCADE,
+  PRIMARY KEY (staff_id, boutique_id)
+);
+
+CREATE INDEX staff_boutiques_boutique_id_idx ON staff_boutiques (boutique_id);
+
+-- Backfill: all existing staff belong to the default boutique
+INSERT INTO staff_boutiques (staff_id, boutique_id)
+SELECT id, '00000000-0000-0000-0000-000000000001' FROM staff;
+
+-- ── vic_client_boutiques ──────────────────────────────────────────────────────
+-- Many-to-many: a VIC client may visit multiple boutiques.
+CREATE TABLE vic_client_boutiques (
+  vic_client_id UUID NOT NULL REFERENCES vic_clients(id) ON DELETE CASCADE,
+  boutique_id   UUID NOT NULL REFERENCES boutiques(id)   ON DELETE CASCADE,
+  PRIMARY KEY (vic_client_id, boutique_id)
+);
+
+CREATE INDEX vic_client_boutiques_boutique_id_idx ON vic_client_boutiques (boutique_id);
+
+-- Backfill: all existing VIC clients belong to the default boutique
+INSERT INTO vic_client_boutiques (vic_client_id, boutique_id)
+SELECT id, '00000000-0000-0000-0000-000000000001' FROM vic_clients;
+
+-- ── vic_advisors — add boutique_id (three-way junction) ───────────────────────
+-- The advisor for a VIC client can differ per boutique.
+-- Old PK was (vic_client_id, staff_id); new PK is (vic_client_id, boutique_id, staff_id).
+ALTER TABLE vic_advisors DROP CONSTRAINT IF EXISTS vic_advisors_pkey;
+
+ALTER TABLE vic_advisors
+  ADD COLUMN boutique_id UUID REFERENCES boutiques(id) ON DELETE CASCADE;
+
+-- Backfill all existing advisor rows to the default boutique
+UPDATE vic_advisors SET boutique_id = '00000000-0000-0000-0000-000000000001'
+  WHERE boutique_id IS NULL;
+
+ALTER TABLE vic_advisors
+  ALTER COLUMN boutique_id SET NOT NULL;
+
+ALTER TABLE vic_advisors
+  ADD PRIMARY KEY (vic_client_id, boutique_id, staff_id);
+
+CREATE INDEX vic_advisors_boutique_id_idx ON vic_advisors (boutique_id);
 
 -- ── scoring_weights ───────────────────────────────────────────────────────────
 -- Currently a singleton table (id=1, integer PK).
