@@ -6,9 +6,11 @@ Run these in order in the Supabase SQL editor (Dashboard → SQL Editor → New 
 |------|-------------|
 | `001_boutiques.sql` | Creates the `boutiques` table; seeds a default boutique for existing data |
 | `002_user_boutique_roles.sql` | Creates the `user_boutique_roles` join table; adds RLS helper functions; enables RLS on the table |
-| `003_add_boutique_id.sql` | Adds `boutique_id` to `staff`, `vic_clients`, `scoring_weights`, `roster_history`; backfills to the default boutique; adds `created_by` + `*_by_id` UUID columns to `roster_history`; extends status constraint with `draft`, `submitted`, `archived` |
-| `004_rls_policies.sql` | Enables RLS and creates all policies on `boutiques`, `staff`, `vic_clients`, `vic_advisors`, `scoring_weights`, `roster_history` |
-| `005_cleanup_legacy_columns.sql` | **Run last, after app is deployed** — drops old free-text `approved_by`, `published_by`, `rejected_by` columns |
+| `003_add_boutique_id.sql` | Junction tables `staff_boutiques` and `vic_client_boutiques` (many-to-many, time-bounded); extends `vic_advisors` to three-way junction; adds `boutique_id` to `scoring_weights` and `roster_history`; adds `created_by` + `*_by_id` UUID columns; extends status constraint with `draft`, `submitted`, `archived` |
+| `004_rls_policies.sql` | Enables RLS and creates all policies on all tables |
+| `005_cleanup_legacy_columns.sql` | **Run after app deploy** — drops old free-text `approved_by`, `published_by`, `rejected_by` columns |
+| `006_dynamic_shifts.sql` | Creates `boutique_shifts` (per-boutique shift definitions, time-bounded) and `staff_shift_availability` (replaces `staff.available_shifts TEXT[]`); seeds default three shifts; backfills staff availability from legacy column; adds partial unique index for one published roster per boutique per date |
+| `007_cleanup_available_shifts.sql` | **Run after app deploy** — drops legacy `staff.available_shifts` column |
 
 ## After running migrations
 
