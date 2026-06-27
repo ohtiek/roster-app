@@ -251,7 +251,7 @@ function RejectModal({ onConfirm, onClose }: {
   const [notes, setNotes] = useState('')
   return createPortal(
     <div style={{
-      position:'fixed', inset:0, background:'rgba(10,15,40,0.82)',
+      position:'fixed', inset:0, background:'rgba(10,15,40,0.95)',
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
@@ -305,7 +305,7 @@ function ApproveModal({
   const hasError = checks.some(c => !c.ok)
   return createPortal(
     <div style={{
-      position:'fixed', inset:0, background:'rgba(10,15,40,0.82)',
+      position:'fixed', inset:0, background:'rgba(10,15,40,0.95)',
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
@@ -377,7 +377,7 @@ function PublishModal({
   const [name, setName] = useState('')
   return createPortal(
     <div style={{
-      position:'fixed', inset:0, background:'rgba(10,15,40,0.82)',
+      position:'fixed', inset:0, background:'rgba(10,15,40,0.95)',
       display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
@@ -678,7 +678,7 @@ function PreviewModal({ rosterId, onClose }: { rosterId: string; onClose: () => 
   }, [rosterId])
 
   return createPortal(
-    <div style={{ position:'fixed', inset:0, background:'rgba(10,15,40,0.82)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div style={{ position:'fixed', inset:0, background:'rgba(10,15,40,0.95)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ background:'var(--color-background-primary)', borderRadius:'var(--border-radius-lg)', border:'0.5px solid var(--color-border-tertiary)', width:'100%', maxWidth:560, maxHeight:'85vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'0.5px solid var(--color-border-tertiary)', flexShrink:0 }}>
           <span style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)' }}>
