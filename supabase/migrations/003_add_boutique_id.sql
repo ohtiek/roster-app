@@ -35,33 +35,49 @@ CREATE TRIGGER vic_clients_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ── staff_boutiques ───────────────────────────────────────────────────────────
--- Many-to-many: a staff member can be eligible to work at multiple boutiques.
--- The roster engine for boutique X only considers staff with a row here.
+-- Many-to-many, time-bounded: a staff member is eligible to work at a boutique
+-- only during the [valid_from, valid_until] window.
+-- The roster engine for boutique X on date D filters to rows where
+--   valid_from <= D AND (valid_until IS NULL OR valid_until >= D).
+-- valid_until = NULL means the assignment is open-ended (still active).
 CREATE TABLE staff_boutiques (
-  staff_id    UUID NOT NULL REFERENCES staff(id)      ON DELETE CASCADE,
-  boutique_id UUID NOT NULL REFERENCES boutiques(id)  ON DELETE CASCADE,
-  PRIMARY KEY (staff_id, boutique_id)
+  staff_id    UUID NOT NULL REFERENCES staff(id)     ON DELETE CASCADE,
+  boutique_id UUID NOT NULL REFERENCES boutiques(id) ON DELETE CASCADE,
+  valid_from  DATE NOT NULL DEFAULT CURRENT_DATE,
+  valid_until DATE,
+  PRIMARY KEY (staff_id, boutique_id),
+  CONSTRAINT staff_boutiques_date_order CHECK (valid_until IS NULL OR valid_until > valid_from)
 );
 
 CREATE INDEX staff_boutiques_boutique_id_idx ON staff_boutiques (boutique_id);
+-- Supports date-range queries when generating a roster for a specific date
+CREATE INDEX staff_boutiques_boutique_date_idx ON staff_boutiques (boutique_id, valid_from, valid_until);
 
--- Backfill: all existing staff belong to the default boutique
-INSERT INTO staff_boutiques (staff_id, boutique_id)
-SELECT id, '00000000-0000-0000-0000-000000000001' FROM staff;
+-- Backfill: all existing staff belong to the default boutique from the beginning
+INSERT INTO staff_boutiques (staff_id, boutique_id, valid_from, valid_until)
+SELECT id, '00000000-0000-0000-0000-000000000001', '2000-01-01', NULL FROM staff;
 
 -- ── vic_client_boutiques ──────────────────────────────────────────────────────
--- Many-to-many: a VIC client may visit multiple boutiques.
+-- Many-to-many, time-bounded: a VIC client visits a boutique during a specific
+-- window. This replaces the global expected_visit_date on vic_clients for
+-- boutique-scoped visit planning.
+-- valid_until = NULL means the relationship is open-ended.
 CREATE TABLE vic_client_boutiques (
   vic_client_id UUID NOT NULL REFERENCES vic_clients(id) ON DELETE CASCADE,
   boutique_id   UUID NOT NULL REFERENCES boutiques(id)   ON DELETE CASCADE,
-  PRIMARY KEY (vic_client_id, boutique_id)
+  valid_from    DATE NOT NULL DEFAULT CURRENT_DATE,
+  valid_until   DATE,
+  PRIMARY KEY (vic_client_id, boutique_id),
+  CONSTRAINT vic_client_boutiques_date_order CHECK (valid_until IS NULL OR valid_until > valid_from)
 );
 
 CREATE INDEX vic_client_boutiques_boutique_id_idx ON vic_client_boutiques (boutique_id);
+-- Supports date-range queries when the engine looks up active VIC clients for a date
+CREATE INDEX vic_client_boutiques_boutique_date_idx ON vic_client_boutiques (boutique_id, valid_from, valid_until);
 
--- Backfill: all existing VIC clients belong to the default boutique
-INSERT INTO vic_client_boutiques (vic_client_id, boutique_id)
-SELECT id, '00000000-0000-0000-0000-000000000001' FROM vic_clients;
+-- Backfill: all existing VIC clients belong to the default boutique from the beginning
+INSERT INTO vic_client_boutiques (vic_client_id, boutique_id, valid_from, valid_until)
+SELECT id, '00000000-0000-0000-0000-000000000001', '2000-01-01', NULL FROM vic_clients;
 
 -- ── vic_advisors — add boutique_id (three-way junction) ───────────────────────
 -- The advisor for a VIC client can differ per boutique.
