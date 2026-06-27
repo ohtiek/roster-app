@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTheme } from '../ThemeProvider'
 import type { StaffMember, VICClient, ScoringWeights } from '../types'
 import {
   fetchStaff, upsertStaff, deleteStaff,
@@ -474,6 +475,8 @@ function WeightsTab() {
 type TabId = 'staff'|'vic'|'weights'|'planner'|'publish'
 
 export default function AdminPanel() {
+  const theme = useTheme()
+  const brandInitials = theme.storeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const [tab,setTab] = useState<TabId>('staff')
   const [staff,setStaffData] = useState<StaffMember[]>([])
   const [vicClients] = useState<VICClient[]>([])
@@ -490,8 +493,8 @@ export default function AdminPanel() {
     <div className="admin-root">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-mark">MA</div>
-          <div><div className="brand-name">Maison Aurore</div><div className="brand-sub">Admin · Supabase</div></div>
+          <div className="brand-mark">{brandInitials}</div>
+          <div><div className="brand-name">{theme.storeName}</div><div className="brand-sub">Admin · Supabase</div></div>
         </div>
         <nav className="sidebar-nav">
           {tabs.map(t=>(
