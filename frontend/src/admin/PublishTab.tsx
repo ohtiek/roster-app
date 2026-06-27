@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import type { ShiftName } from '../types'
 import { AVATAR_STYLE } from '../types'
 import {
@@ -248,10 +249,10 @@ function RejectModal({ onConfirm, onClose }: {
   onClose: () => void
 }) {
   const [notes, setNotes] = useState('')
-  return (
+  return createPortal(
     <div style={{
       position:'fixed', inset:0, background:'rgba(20,29,74,0.55)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
         background:'var(--color-background-primary)',
@@ -284,7 +285,8 @@ function RejectModal({ onConfirm, onClose }: {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -301,10 +303,10 @@ function ApproveModal({
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
   const hasError = checks.some(c => !c.ok)
-  return (
+  return createPortal(
     <div style={{
       position:'fixed', inset:0, background:'rgba(20,29,74,0.55)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
         background:'var(--color-background-primary)',
@@ -358,7 +360,8 @@ function ApproveModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -372,10 +375,10 @@ function PublishModal({
   onClose: () => void
 }) {
   const [name, setName] = useState('')
-  return (
+  return createPortal(
     <div style={{
       position:'fixed', inset:0, background:'rgba(20,29,74,0.55)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
         background:'var(--color-background-primary)',
@@ -425,7 +428,8 @@ function PublishModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -673,8 +677,8 @@ function PreviewModal({ rosterId, onClose }: { rosterId: string; onClose: () => 
     fetchRosterById(rosterId).then(setRow).finally(() => setLoading(false))
   }, [rosterId])
 
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(20,29,74,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:20 }}>
+  return createPortal(
+    <div style={{ position:'fixed', inset:0, background:'rgba(20,29,74,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ background:'var(--color-background-primary)', borderRadius:'var(--border-radius-lg)', border:'0.5px solid var(--color-border-tertiary)', width:'100%', maxWidth:560, maxHeight:'85vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'0.5px solid var(--color-border-tertiary)', flexShrink:0 }}>
           <span style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)' }}>
@@ -709,7 +713,8 @@ function PreviewModal({ rosterId, onClose }: { rosterId: string; onClose: () => 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
