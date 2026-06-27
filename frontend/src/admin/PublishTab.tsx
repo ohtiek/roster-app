@@ -181,12 +181,18 @@ function StateBar({ status }: { status: RosterStatus }) {
 // ── Shift preview (compact 3-column grid) ─────────────────────────────────────
 
 function ShiftPreview({ payload }: { payload: RosterPayload }) {
+  const [expanded, setExpanded] = useState<Set<ShiftName>>(new Set())
+  const PREVIEW_LIMIT = 5
+
   return (
     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:8, marginBottom:12 }}>
       {SHIFTS.map(shift => {
         const assigned = payload.assignments.filter(a => a.shift === shift)
         const score = payload.scores?.find(s => s.shift === shift)
         const meta = SHIFT_META[shift]
+        const isExpanded = expanded.has(shift)
+        const visible = isExpanded ? assigned : assigned.slice(0, PREVIEW_LIMIT)
+        const hiddenCount = assigned.length - PREVIEW_LIMIT
         return (
           <div key={shift} style={{ borderRadius:'var(--border-radius-md)', overflow:'hidden', border:'0.5px solid var(--color-border-tertiary)' }}>
             <div style={{ background:meta.color, padding:'6px 9px', color:'white', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -194,7 +200,7 @@ function ShiftPreview({ payload }: { payload: RosterPayload }) {
               <span style={{ fontSize:11, opacity:.75 }}>{assigned.length} staff {score ? `· ${Math.round(score.score)}` : ''}</span>
             </div>
             <div style={{ background:'var(--color-background-secondary)', padding:'6px 8px', minHeight:60 }}>
-              {(assigned ?? []).filter(a => a?.staffId).slice(0,5).map((a,i) => {
+              {(visible ?? []).filter(a => a?.staffId).map((a,i) => {
                 const av = avatarStyle(a.staffId)
                 const name = STAFF_NAMES[a.staffId] ?? a.staffId ?? '?'
                 return (
@@ -211,8 +217,21 @@ function ShiftPreview({ payload }: { payload: RosterPayload }) {
                   </div>
                 )
               })}
-              {assigned.length > 5 && (
-                <div style={{ fontSize:11, color:'var(--color-text-tertiary)', marginTop:2 }}>+{assigned.length-5} more</div>
+              {hiddenCount > 0 && !isExpanded && (
+                <button
+                  onClick={() => setExpanded(prev => { const s = new Set(prev); s.add(shift); return s })}
+                  style={{ fontSize:11, color:'var(--color-text-secondary)', marginTop:2, background:'none', border:'none', cursor:'pointer', padding:'2px 0', fontFamily:'inherit', textDecoration:'underline' }}
+                >
+                  +{hiddenCount} more
+                </button>
+              )}
+              {isExpanded && assigned.length > PREVIEW_LIMIT && (
+                <button
+                  onClick={() => setExpanded(prev => { const s = new Set(prev); s.delete(shift); return s })}
+                  style={{ fontSize:11, color:'var(--color-text-secondary)', marginTop:2, background:'none', border:'none', cursor:'pointer', padding:'2px 0', fontFamily:'inherit', textDecoration:'underline' }}
+                >
+                  Show less
+                </button>
               )}
             </div>
           </div>
@@ -231,15 +250,14 @@ function RejectModal({ onConfirm, onClose }: {
   const [notes, setNotes] = useState('')
   return (
     <div style={{
-      position:'absolute', inset:0, background:'rgba(20,29,74,0.45)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:50,
-      borderRadius:'var(--border-radius-lg)',
+      position:'fixed', inset:0, background:'rgba(20,29,74,0.55)',
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:200,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
         background:'var(--color-background-primary)',
         border:'0.5px solid var(--color-border-tertiary)',
         borderRadius:'var(--border-radius-lg)',
-        padding:20, width:340,
+        padding:20, width:'min(340px, calc(100vw - 32px))',
       }}>
         <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)', marginBottom:6 }}>Reject roster</div>
         <div style={{ fontSize:13, color:'var(--color-text-secondary)', marginBottom:12, lineHeight:1.5 }}>
@@ -285,15 +303,14 @@ function ApproveModal({
   const hasError = checks.some(c => !c.ok)
   return (
     <div style={{
-      position:'absolute', inset:0, background:'rgba(20,29,74,0.45)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:50,
-      borderRadius:'var(--border-radius-lg)',
+      position:'fixed', inset:0, background:'rgba(20,29,74,0.55)',
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:200,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
         background:'var(--color-background-primary)',
         border:'0.5px solid var(--color-border-tertiary)',
         borderRadius:'var(--border-radius-lg)',
-        padding:20, width:380,
+        padding:20, width:'min(380px, calc(100vw - 32px))',
       }}>
         <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)', marginBottom:6 }}>Approve roster</div>
         <div style={{ fontSize:13, color:'var(--color-text-secondary)', marginBottom:12, lineHeight:1.5 }}>
@@ -357,22 +374,21 @@ function PublishModal({
   const [name, setName] = useState('')
   return (
     <div style={{
-      position:'absolute', inset:0, background:'rgba(20,29,74,0.45)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:50,
-      borderRadius:'var(--border-radius-lg)',
+      position:'fixed', inset:0, background:'rgba(20,29,74,0.55)',
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:200,
     }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{
         background:'var(--color-background-primary)',
         border:'0.5px solid #C9A84C',
         borderRadius:'var(--border-radius-lg)',
-        padding:20, width:360,
+        padding:20, width:'min(360px, calc(100vw - 32px))',
       }}>
         <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)', marginBottom:6 }}>
           <i className="ti ti-send" aria-hidden="true" style={{ marginRight:6, color:'#C9A84C' }} />
           Publish roster
         </div>
         <div style={{ fontSize:13, color:'var(--color-text-secondary)', marginBottom:12, lineHeight:1.5 }}>
-          This saves the roster to Supabase and makes it live on the store front-end. This action cannot be undone.
+          This makes the roster live on the store front-end. This action cannot be undone.
         </div>
 
         <div style={{ background:'#F5F0E8', border:'0.5px solid #C9A84C', borderRadius:'var(--border-radius-md)', padding:'10px 12px', marginBottom:14 }}>
@@ -380,7 +396,7 @@ function PublishModal({
             {fmtDate(roster.roster_date)}
           </div>
           <div style={{ fontSize:12, color:'#7A5C1E' }}>
-            Score {safeScore(roster.overall_score)}/100 · {roster.override_count ?? 0} override{(roster.override_count ?? 0) !== 1 ? 's' : ''} · {safeSolver(roster.solver_used)}
+            Score {safeScore(roster.overall_score)}/100 · {roster.override_count ?? 0} override{(roster.override_count ?? 0) !== 1 ? 's' : ''}
           </div>
           {roster.notes && (
             <div style={{ fontSize:12, color:'#7A5C1E', marginTop:4, fontStyle:'italic' }}>"{roster.notes}"</div>
@@ -448,7 +464,6 @@ function PendingCard({
   const checks = [
     { label: `Score ${safeScore(roster.overall_score)}/100 — ${(roster.overall_score ?? 0) >= 90 ? 'all constraints met' : 'some constraints marginal'}`, ok: (roster.overall_score ?? 0) >= 80 },
     ...(overrideCount > 0 ? [{ label: `${overrideCount} manual override${overrideCount > 1 ? 's' : ''} — review shift assignments above`, ok: true }] : []),
-    { label: 'Solver: ' + safeSolver(roster.solver_used), ok: true },
   ]
 
   async function doApprove(by: string, notes: string) {
@@ -493,7 +508,7 @@ function PendingCard({
         <div>
           <div style={{ fontSize:15, fontWeight:500, color:'var(--color-text-primary)' }}>{fmtDate(roster.roster_date)}</div>
           <div style={{ fontSize:12, color:'var(--color-text-secondary)', marginTop:2 }}>
-            Generated {fmtDateTime(roster.created_at)} · {safeSolver(roster.solver_used)}
+            Generated {fmtDateTime(roster.created_at)}
             {overrideCount > 0 && ` · ${overrideCount} override${overrideCount > 1 ? 's' : ''}`}
           </div>
         </div>
@@ -627,7 +642,6 @@ function HistoryRow({
     <div style={{ display:'flex', alignItems:'center', gap:12, background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:'var(--border-radius-lg)', padding:'10px 14px' }}>
       <div style={{ width:110, flexShrink:0 }}>
         <div style={{ fontSize:13, fontWeight:500, color:'var(--color-text-primary)' }}>{fmtDate(row.roster_date)}</div>
-        <div style={{ fontSize:11, color:'var(--color-text-secondary)', marginTop:1 }}>{safeSolver(row.solver_used)}</div>
       </div>
       <div style={{ flex:1, fontSize:12, color:'var(--color-text-secondary)' }}>
         {row.override_count ?? 0} override{(row.override_count ?? 0) !== 1 ? 's' : ''}
@@ -677,7 +691,6 @@ function PreviewModal({ rosterId, onClose }: { rosterId: string; onClose: () => 
               <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap' }}>
                 <StatusBadge status={row.status} />
                 <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>Score {safeScore(row.overall_score)}/100</span>
-                <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>{safeSolver(row.solver_used)}</span>
                 {row.override_count ? <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>{row.override_count} overrides</span> : null}
               </div>
               {row.payload && <ShiftPreview payload={
