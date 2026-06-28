@@ -1,9 +1,22 @@
 # Supabase Migrations
 
+## Setting up a fresh environment
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to **Dashboard → SQL Editor → New query**
+3. Run migrations **in order**, one file at a time
+4. Skip the three post-deploy cleanup files for now (005, 007, 009) — run those only after the app code has been updated to use the new tables
+5. Create auth users and assign roles (see below)
+6. Copy `frontend/.env.example` to `frontend/.env` and fill in your project URL and anon key
+7. Run the app: `cd frontend && npm install && npm run dev`
+
+## Migration reference
+
 Run these in order in the Supabase SQL editor (Dashboard → SQL Editor → New query).
 
 | File | What it does |
 |------|-------------|
+| `000_base_schema.sql` | **Start here for a new environment** — creates the core tables (`staff`, `vic_clients`, `vic_advisors`, `scoring_weights`, `roster_history`) that all later migrations build on |
 | `001_boutiques.sql` | Creates the `boutiques` table; seeds a default boutique for existing data |
 | `002_user_boutique_roles.sql` | Creates the `user_boutique_roles` join table; adds RLS helper functions; enables RLS on the table |
 | `003_add_boutique_id.sql` | Junction tables `staff_boutiques` and `vic_client_boutiques` (many-to-many, time-bounded); extends `vic_advisors` to three-way junction; adds `boutique_id` to `scoring_weights` and `roster_history`; adds `created_by` + `*_by_id` UUID columns; extends status constraint with `draft`, `submitted`, `archived` |
@@ -19,6 +32,16 @@ Run these in order in the Supabase SQL editor (Dashboard → SQL Editor → New 
 | `013_approval_workflow.sql` | Adds `submit_deadline` and `approve_deadline` to `roster_history`; adds `approver_delegate_id` to `user_boutique_roles` |
 | `014_vic_appointments_and_loans.sql` | Adds `tier` and `preferred_languages` to `vic_clients`; creates `vic_appointments` (individual confirmed/tentative visit slots per boutique per date); adds `is_loan` and `home_boutique_id` to `staff_boutiques` |
 | `015_audit_analytics_views.sql` | Creates `audit_log` with SECURITY DEFINER triggers on sensitive tables; creates `scoring_weights_history` (snapshot on every weight change); creates `roster_actuals` (planned vs actual attendance); creates `active_staff_skills` view (auto-excludes expired skill certifications) |
+
+## Post-deploy cleanup (run after app is updated)
+
+These three files drop legacy columns. Only run them once the app no longer reads those columns:
+
+| File | What it drops | Safe to run after |
+|------|--------------|-------------------|
+| `005_cleanup_legacy_columns.sql` | `roster_history.approved_by/published_by/rejected_by` (TEXT) | App uses `*_by_id` UUID columns |
+| `007_cleanup_available_shifts.sql` | `staff.available_shifts` | App uses `staff_shift_availability` |
+| `009_cleanup_legacy_staff_columns.sql` | `staff.role`, `staff.cannot_work_dates`, `staff.must_work_dates` | App uses `staff_skills`, `staff_unavailability`, `staff_required_work` |
 
 ## After running migrations
 
