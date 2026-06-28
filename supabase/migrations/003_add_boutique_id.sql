@@ -25,6 +25,37 @@
 --   · Adds 'draft', 'submitted', 'archived' to the status check constraint
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- ── Type compatibility: TEXT → UUID id columns ───────────────────────────────
+-- Early Supabase projects sometimes created tables with TEXT primary keys
+-- instead of UUID. This block detects that case and converts all affected
+-- id columns before the FK-constrained junction tables are created below.
+-- Safe to run on a schema that already uses UUID — the check makes it a no-op.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE  table_schema = 'public'
+      AND  table_name   = 'staff'
+      AND  column_name  = 'id'
+      AND  data_type    = 'text'
+  ) THEN
+    -- vic_advisors PK and FKs must be dropped before its columns can be retyped.
+    -- Migration 003 re-establishes the PK as a three-way junction further below.
+    ALTER TABLE vic_advisors DROP CONSTRAINT IF EXISTS vic_advisors_pkey;
+    ALTER TABLE vic_advisors DROP CONSTRAINT IF EXISTS vic_advisors_staff_id_fkey;
+    ALTER TABLE vic_advisors DROP CONSTRAINT IF EXISTS vic_advisors_vic_client_id_fkey;
+
+    -- Convert base-table id columns
+    ALTER TABLE staff          ALTER COLUMN id TYPE UUID USING id::uuid;
+    ALTER TABLE vic_clients    ALTER COLUMN id TYPE UUID USING id::uuid;
+    ALTER TABLE roster_history ALTER COLUMN id TYPE UUID USING id::uuid;
+
+    -- Convert vic_advisors FK columns to match the newly-typed referenced columns
+    ALTER TABLE vic_advisors ALTER COLUMN staff_id      TYPE UUID USING staff_id::uuid;
+    ALTER TABLE vic_advisors ALTER COLUMN vic_client_id TYPE UUID USING vic_client_id::uuid;
+  END IF;
+END $$;
+
 -- ── updated_at trigger on staff and vic_clients ───────────────────────────────
 CREATE TRIGGER staff_updated_at
   BEFORE UPDATE ON staff
