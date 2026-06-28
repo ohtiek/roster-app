@@ -37,74 +37,140 @@ CREATE POLICY boutiques_delete ON boutiques FOR DELETE
   USING (is_regional_admin());
 
 -- ── staff ─────────────────────────────────────────────────────────────────────
+-- staff has no boutique_id column — boutique membership is in staff_boutiques.
 ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
 
--- Any user at the boutique can read staff (approvers need it during review)
+-- Any user at any boutique the staff member belongs to can read the record
 CREATE POLICY staff_select ON staff FOR SELECT
+  USING (
+    is_regional_admin()
+    OR EXISTS (
+      SELECT 1 FROM staff_boutiques sb
+      WHERE sb.staff_id = staff.id
+        AND sb.boutique_id IN (SELECT my_boutique_ids())
+    )
+  );
+
+-- Any admin (at any boutique) can create a staff member.
+-- Boutique assignment happens separately via staff_boutiques INSERT.
+CREATE POLICY staff_insert ON staff FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_boutique_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Admin can update/delete a staff member linked to their boutique
+CREATE POLICY staff_update ON staff FOR UPDATE
+  USING (
+    is_regional_admin()
+    OR EXISTS (
+      SELECT 1 FROM staff_boutiques sb
+      WHERE sb.staff_id = staff.id
+        AND has_role_at(sb.boutique_id, ARRAY['admin'])
+    )
+  );
+
+CREATE POLICY staff_delete ON staff FOR DELETE
+  USING (
+    is_regional_admin()
+    OR EXISTS (
+      SELECT 1 FROM staff_boutiques sb
+      WHERE sb.staff_id = staff.id
+        AND has_role_at(sb.boutique_id, ARRAY['admin'])
+    )
+  );
+
+-- ── staff_boutiques ───────────────────────────────────────────────────────────
+ALTER TABLE staff_boutiques ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY staff_boutiques_select ON staff_boutiques FOR SELECT
   USING (
     is_regional_admin()
     OR boutique_id IN (SELECT my_boutique_ids())
   );
 
--- Only admin can write staff
-CREATE POLICY staff_insert ON staff FOR INSERT
+-- Only admin at the boutique can link/unlink staff
+CREATE POLICY staff_boutiques_insert ON staff_boutiques FOR INSERT
   WITH CHECK (has_role_at(boutique_id, ARRAY['admin']));
 
-CREATE POLICY staff_update ON staff FOR UPDATE
-  USING (has_role_at(boutique_id, ARRAY['admin']));
-
-CREATE POLICY staff_delete ON staff FOR DELETE
+CREATE POLICY staff_boutiques_delete ON staff_boutiques FOR DELETE
   USING (has_role_at(boutique_id, ARRAY['admin']));
 
 -- ── vic_clients ───────────────────────────────────────────────────────────────
+-- vic_clients has no boutique_id column — boutique membership is in vic_client_boutiques.
 ALTER TABLE vic_clients ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY vic_clients_select ON vic_clients FOR SELECT
   USING (
     is_regional_admin()
-    OR boutique_id IN (SELECT my_boutique_ids())
+    OR EXISTS (
+      SELECT 1 FROM vic_client_boutiques vcb
+      WHERE vcb.vic_client_id = vic_clients.id
+        AND vcb.boutique_id IN (SELECT my_boutique_ids())
+    )
   );
 
 CREATE POLICY vic_clients_insert ON vic_clients FOR INSERT
-  WITH CHECK (has_role_at(boutique_id, ARRAY['admin']));
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_boutique_roles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  );
 
 CREATE POLICY vic_clients_update ON vic_clients FOR UPDATE
-  USING (has_role_at(boutique_id, ARRAY['admin']));
+  USING (
+    is_regional_admin()
+    OR EXISTS (
+      SELECT 1 FROM vic_client_boutiques vcb
+      WHERE vcb.vic_client_id = vic_clients.id
+        AND has_role_at(vcb.boutique_id, ARRAY['admin'])
+    )
+  );
 
 CREATE POLICY vic_clients_delete ON vic_clients FOR DELETE
+  USING (
+    is_regional_admin()
+    OR EXISTS (
+      SELECT 1 FROM vic_client_boutiques vcb
+      WHERE vcb.vic_client_id = vic_clients.id
+        AND has_role_at(vcb.boutique_id, ARRAY['admin'])
+    )
+  );
+
+-- ── vic_client_boutiques ──────────────────────────────────────────────────────
+ALTER TABLE vic_client_boutiques ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY vic_client_boutiques_select ON vic_client_boutiques FOR SELECT
+  USING (
+    is_regional_admin()
+    OR boutique_id IN (SELECT my_boutique_ids())
+  );
+
+CREATE POLICY vic_client_boutiques_insert ON vic_client_boutiques FOR INSERT
+  WITH CHECK (has_role_at(boutique_id, ARRAY['admin']));
+
+CREATE POLICY vic_client_boutiques_delete ON vic_client_boutiques FOR DELETE
   USING (has_role_at(boutique_id, ARRAY['admin']));
 
 -- ── vic_advisors ──────────────────────────────────────────────────────────────
--- Scoped via the parent vic_client's boutique_id
+-- Now a three-way junction (vic_client_id, boutique_id, staff_id).
+-- boutique_id is a direct column so policies are simpler than before.
 ALTER TABLE vic_advisors ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY vic_advisors_select ON vic_advisors FOR SELECT
   USING (
     is_regional_admin()
-    OR EXISTS (
-      SELECT 1 FROM vic_clients vc
-      WHERE vc.id = vic_advisors.vic_client_id
-        AND vc.boutique_id IN (SELECT my_boutique_ids())
-    )
+    OR boutique_id IN (SELECT my_boutique_ids())
   );
 
 CREATE POLICY vic_advisors_insert ON vic_advisors FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM vic_clients vc
-      WHERE vc.id = vic_advisors.vic_client_id
-        AND has_role_at(vc.boutique_id, ARRAY['admin'])
-    )
-  );
+  WITH CHECK (has_role_at(boutique_id, ARRAY['admin']));
 
 CREATE POLICY vic_advisors_delete ON vic_advisors FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM vic_clients vc
-      WHERE vc.id = vic_advisors.vic_client_id
-        AND has_role_at(vc.boutique_id, ARRAY['admin'])
-    )
-  );
+  USING (has_role_at(boutique_id, ARRAY['admin']));
 
 -- ── scoring_weights ───────────────────────────────────────────────────────────
 ALTER TABLE scoring_weights ENABLE ROW LEVEL SECURITY;
