@@ -1,0 +1,151 @@
+:root {
+  --dash-border: #E0DDD7;
+  --dash-text: #1A1F2B;
+  --dash-muted: #6B7280;
+  --dash-surface: #fff;
+  --dash-hover: #F5F3EF;
+  --dash-accent: #B8973A;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --dash-border: #243050; --dash-text: #E4E0D8; --dash-muted: #8090A8;
+          --dash-surface: #141C2C; --dash-hover: #1A2438; --dash-accent: #C9A84C; }
+}
+:root[data-theme="light"] { --dash-border: #E0DDD7; --dash-text: #1A1F2B; --dash-muted: #6B7280;
+  --dash-surface: #fff; --dash-hover: #F5F3EF; --dash-accent: #B8973A; }
+:root[data-theme="dark"] { --dash-border: #243050; --dash-text: #E4E0D8; --dash-muted: #8090A8;
+  --dash-surface: #141C2C; --dash-hover: #1A2438; --dash-accent: #C9A84C; }
+
+.page { display: flex; flex-direction: column; }
+
+.content { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+.loading, .empty, .errorMsg {
+  padding: 2rem;
+  font-size: 14px;
+  color: var(--dash-muted);
+}
+.errorMsg { color: #d9534f; }
+
+/* ── Cards ── */
+.card {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cardTitle {
+  font-size: 14px; font-weight: 600;
+  color: var(--dash-text);
+  margin: 0;
+  padding: 1rem 1.25rem 0;
+}
+
+.cardDesc {
+  font-size: 13px; color: var(--dash-muted);
+  margin: 0.35rem 1.25rem 0.75rem;
+  line-height: 1.5;
+}
+
+/* ── Rule table ── */
+.ruleTable { display: flex; flex-direction: column; }
+
+.ruleGroup { display: flex; flex-direction: column; }
+
+.groupLabel {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--dash-muted);
+  padding: 0.65rem 1.25rem 0.35rem;
+  background: var(--dash-hover);
+  border-top: 1px solid var(--dash-border);
+}
+
+.ruleRow {
+  display: flex; align-items: center;
+  padding: 0.85rem 1.25rem;
+  gap: 1rem;
+  border-top: 1px solid var(--dash-border);
+  transition: background 0.1s;
+}
+.ruleRow:hover { background: var(--dash-hover); }
+
+.ruleInfo { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+
+.ruleName {
+  font-size: 13.5px; font-weight: 500;
+  color: var(--dash-text);
+}
+.ruleRow:not(.enabled) .ruleName { color: var(--dash-muted); }
+
+.ruleDesc { font-size: 12px; color: var(--dash-muted); line-height: 1.4; }
+
+.ruleControls { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+
+.severitySelect {
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  padding: 3px 6px;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.severitySelect:disabled { opacity: 0.45; cursor: not-allowed; }
+.severitySelect.hard { border-color: #d9534f; color: #d9534f; }
+.severitySelect.warn { border-color: #e8a020; color: #c47d10; }
+@media (prefers-color-scheme: dark) {
+  .severitySelect.warn { color: #e8a020; }
+}
+
+.saveIndicator {
+  font-size: 13px; width: 16px; text-align: center;
+  color: transparent;
+  transition: color 0.15s;
+}
+.saveIndicator.saving { color: var(--dash-muted); }
+.saveIndicator.saved  { color: #4caf50; }
+.saveIndicator.error  { color: #d9534f; }
+
+/* ── Threshold / weight grid ── */
+.thresholdGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 0 1.25rem 1rem;
+}
+
+.field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.fieldLabel { font-size: 12.5px; font-weight: 500; color: var(--dash-muted); }
+
+.fieldInput {
+  font-size: 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: 5px;
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  padding: 0.45rem 0.65rem;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.12s;
+}
+.fieldInput:focus {
+  outline: none;
+  border-color: var(--dash-accent);
+}
+
+.fieldHint { font-size: 11.5px; color: var(--dash-muted); line-height: 1.35; }
+
+/* ── Save row ── */
+.saveRow {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--dash-border);
+}
+
+.saveMsg { font-size: 13px; }
+
+.ok { color: #4caf50; }
+.bad { color: #d9534f; }

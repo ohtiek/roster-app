@@ -90,6 +90,73 @@ export interface EngineConfig {
   max_hours_per_day: number
 }
 
+export interface ScoringWeights {
+  boutique_id: string
+  skill_coverage: number
+  vic_affiliation: number
+  gender_balance: number
+  seniority: number
+  language_coverage: number
+}
+
+// ─── Rule config ──────────────────────────────────────────────────────────────
+
+export type RuleKey =
+  | 'max_hours_per_day'
+  | 'weekly_hours_cap'
+  | 'min_rest_hours'
+  | 'max_consecutive_shifts'
+  | 'certification_expiry'
+  | 'vic_coverage'
+  | 'gender_balance'
+  | 'day_of_week_availability'
+
+export type RuleSeverity = 'hard_block' | 'warning'
+
+export interface RuleConfig {
+  boutique_id: string
+  rule_key: RuleKey
+  is_enabled: boolean
+  severity: RuleSeverity
+  updated_at: string
+}
+
+// ─── Skills ───────────────────────────────────────────────────────────────────
+
+export interface SkillType {
+  id: string
+  name: string
+  category: string | null
+  is_vic_eligible: boolean
+  is_senior_equivalent: boolean
+  engine_priority: number
+}
+
+export interface StaffSkill {
+  staff_id: string
+  skill_type_id: string
+  skill_type_name: string
+  is_primary: boolean
+  proficiency_level: string | null
+  expires_at: string | null
+}
+
+// ─── Staff (with boutique details) ───────────────────────────────────────────
+
+export interface StaffRow {
+  id: string
+  name: string
+  external_hr_id: string | null
+  employment_type: EmploymentType
+  contracted_hours_per_week: number | null
+  gender: 'M' | 'F' | 'NB'
+  languages: string[]
+  seniority: 'junior' | 'senior' | 'manager'
+  avatar_color: string | null
+  skills: StaffSkill[]
+  availability_days: number[]   // 0=Sun … 6=Sat; empty = all days
+}
+
 // ─── Constraint violation ─────────────────────────────────────────────────────
 
 export type ViolationSeverity = 'warning' | 'error'
