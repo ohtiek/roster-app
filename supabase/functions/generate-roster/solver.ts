@@ -1,6 +1,7 @@
 /**
  * Pure greedy roster solver — no DB, no Deno APIs.
- * Ported from frontend/src/engine.ts and extended with DB-driven config.
+ * Ported from frontend/src/engine.ts and extended with DB-driven config
+ * and per-boutique rule config (enable/disable, hard_block vs warning).
  */
 
 export interface SolverShift {
@@ -64,12 +65,45 @@ export interface SolverConfig {
   }
 }
 
+// ── Rule configuration ──────────────────────────────────────────────────────
+
+export type RuleKey =
+  | 'max_hours_per_day'       // daily hours ceiling
+  | 'weekly_hours_cap'        // weekly contracted cap for part-time/casual
+  | 'min_rest_hours'          // inter-day rest check (between days)
+  | 'max_consecutive_shifts'  // fatigue: max shifts in one day
+  | 'certification_expiry'    // applied in index.ts before solver runs
+  | 'vic_coverage'            // flag uncovered VIC clients
+  | 'gender_balance'          // flag out-of-band gender ratio
+  | 'day_of_week_availability' // applied in index.ts before solver runs
+
+export interface RuleEntry {
+  is_enabled: boolean
+  severity: 'hard_block' | 'warning'
+}
+
+export type RuleConfigMap = Partial<Record<RuleKey, RuleEntry>>
+
+// Convenience: check if a rule is active as a hard block
+function isHardBlock(rules: RuleConfigMap, key: RuleKey): boolean {
+  const r = rules[key]
+  return !!r?.is_enabled && r.severity === 'hard_block'
+}
+
+// Convenience: check if a rule is active at all (hard_block or warning)
+function isActive(rules: RuleConfigMap, key: RuleKey): boolean {
+  return !!(rules[key]?.is_enabled)
+}
+
+// ── Solver input / output ──────────────────────────────────────────────────
+
 export interface SolverInput {
   roster_date: string
   shifts: SolverShift[]
   staff: SolverStaff[]
   vic_clients: SolverVICClient[]
   config: SolverConfig
+  rules: RuleConfigMap
 }
 
 export interface SolverResult {
@@ -103,6 +137,7 @@ export interface SolverResult {
     shifts: string[]
     level: string
     note: string
+    rule_key: RuleKey
   }>
   hours_warnings: Array<{
     staff_id: string
@@ -113,28 +148,33 @@ export interface SolverResult {
     weekly_hours_projected: number
     weekly_cap: number | null
     type: 'daily' | 'weekly'
+    rule_key: RuleKey
+    severity: 'hard_block' | 'warning'
   }>
   overall_score: number
   solver_used: string
 }
 
+// ── Main solver ─────────────────────────────────────────────────────────────
+
 export function solve(input: SolverInput): SolverResult {
-  const { shifts, staff, vic_clients, config } = input
+  const { shifts, staff, vic_clients, config, rules } = input
   const sortedShifts = [...shifts].sort((a, b) => a.sort_order - b.sort_order)
 
   const vicAdvisorIds = new Set(vic_clients.flatMap(v => v.advisor_staff_ids))
 
-  // shift_id -> staff assigned to that shift
   const shiftAssignments = new Map<string, SolverStaff[]>()
   for (const s of sortedShifts) shiftAssignments.set(s.id, [])
 
-  // Daily hours accumulated per staff member
+  // Accumulated hours and shift count per staff member for this roster day
   const dailyHours = new Map<string, number>()
+  const dailyShiftCount = new Map<string, number>()
 
   // Non-VIC staff are locked to one shift after assignment
   const lockedStaffIds = new Set<string>()
 
   for (const shift of sortedShifts) {
+    // Base eligibility: available for shift + not on leave + not locked (unless VIC)
     const eligible = staff.filter(s =>
       s.available_shift_ids.has(shift.id) &&
       !s.unavailable_shift_ids.has(shift.id) &&
@@ -152,6 +192,33 @@ export function solve(input: SolverInput): SolverResult {
     }
 
     const sorted = [...eligible].sort((a, b) => priority(b) - priority(a))
+
+    // Gate function: can this staff member take this additional shift?
+    // Returns false only when a hard_block rule would be violated.
+    function canAssign(s: SolverStaff): boolean {
+      // max_consecutive_shifts hard_block
+      if (isHardBlock(rules, 'max_consecutive_shifts')) {
+        const shiftsSoFar = dailyShiftCount.get(s.id) ?? 0
+        if (shiftsSoFar >= config.max_consecutive_shifts) return false
+      }
+      // max_hours_per_day hard_block
+      if (isHardBlock(rules, 'max_hours_per_day')) {
+        const hoursSoFar = dailyHours.get(s.id) ?? 0
+        if (hoursSoFar + shift.duration_hours > config.max_hours_per_day) return false
+      }
+      // weekly_hours_cap hard_block (part_time / casual with a cap set)
+      if (
+        isHardBlock(rules, 'weekly_hours_cap') &&
+        (s.employment_type === 'part_time' || s.employment_type === 'casual') &&
+        s.contracted_hours_per_week != null
+      ) {
+        const hoursSoFar = dailyHours.get(s.id) ?? 0
+        const projected = s.weekly_hours_so_far + hoursSoFar + shift.duration_hours
+        if (projected > s.contracted_hours_per_week) return false
+      }
+      return true
+    }
+
     const assigned: SolverStaff[] = []
 
     // Pass 1: fill minimum requirements per skill type, highest engine_priority first
@@ -161,6 +228,7 @@ export function solve(input: SolverInput): SolverResult {
       for (const s of sorted) {
         if (filled >= req.min_count) break
         if (assigned.includes(s)) continue
+        if (!canAssign(s)) continue
         if (s.skills.some(sk => sk.skill_type_id === req.skill_type_id)) {
           assigned.push(s)
           filled++
@@ -171,14 +239,18 @@ export function solve(input: SolverInput): SolverResult {
     // Pass 2: ensure each VIC client has at least one advisor on shift
     for (const vic of vic_clients) {
       if (assigned.some(s => vic.advisor_staff_ids.includes(s.id))) continue
-      const adv = sorted.find(s => vic.advisor_staff_ids.includes(s.id) && !assigned.includes(s))
+      const adv = sorted.find(s =>
+        vic.advisor_staff_ids.includes(s.id) &&
+        !assigned.includes(s) &&
+        canAssign(s)
+      )
       if (adv) assigned.push(adv)
     }
 
     // Pass 3: fill to target headcount
     for (const s of sorted) {
       if (assigned.length >= config.target_headcount_per_shift) break
-      if (!assigned.includes(s)) assigned.push(s)
+      if (!assigned.includes(s) && canAssign(s)) assigned.push(s)
     }
 
     // Trim to max_count per skill type
@@ -199,11 +271,12 @@ export function solve(input: SolverInput): SolverResult {
 
     for (const s of finalAssigned) {
       dailyHours.set(s.id, (dailyHours.get(s.id) ?? 0) + shift.duration_hours)
+      dailyShiftCount.set(s.id, (dailyShiftCount.get(s.id) ?? 0) + 1)
       if (!vicAdvisorIds.has(s.id)) lockedStaffIds.add(s.id)
     }
   }
 
-  // Assemble assignments output
+  // ── Assignments output ───────────────────────────────────────────────────
   const assignments: SolverResult['assignments'] = []
   for (const shift of sortedShifts) {
     for (const s of shiftAssignments.get(shift.id) ?? []) {
@@ -218,12 +291,12 @@ export function solve(input: SolverInput): SolverResult {
     }
   }
 
-  // Score each shift
+  // ── Shift scores ─────────────────────────────────────────────────────────
   const shift_scores = sortedShifts.map(shift =>
-    scoreShift(shift, shiftAssignments.get(shift.id) ?? [], vic_clients, config.weights)
+    scoreShift(shift, shiftAssignments.get(shift.id) ?? [], vic_clients, config.weights, rules)
   )
 
-  // VIC coverage report
+  // ── VIC coverage report ──────────────────────────────────────────────────
   const vic_coverage: SolverResult['vic_coverage'] = vic_clients.map(vc => {
     const shiftsCovered: Record<string, string> = {}
     for (const shift of sortedShifts) {
@@ -238,50 +311,62 @@ export function solve(input: SolverInput): SolverResult {
     }
   })
 
-  // Fatigue flags
-  const staffShiftNames = new Map<string, string[]>()
-  for (const a of assignments) {
-    if (!staffShiftNames.has(a.staff_id)) staffShiftNames.set(a.staff_id, [])
-    staffShiftNames.get(a.staff_id)!.push(a.shift_name)
-  }
-
+  // ── Fatigue flags (max_consecutive_shifts rule) ───────────────────────────
   const fatigue_flags: SolverResult['fatigue_flags'] = []
-  for (const [staffId, shiftNames] of staffShiftNames) {
-    if (shiftNames.length >= config.max_consecutive_shifts) {
-      const s = staff.find(x => x.id === staffId)!
-      fatigue_flags.push({
-        staff_id: staffId,
-        staff_name: s.name,
-        shifts: shiftNames,
-        level: 'caution',
-        note: `${s.name} is on ${shiftNames.length} shifts today — confirm rest day tomorrow.`,
-      })
+  if (isActive(rules, 'max_consecutive_shifts')) {
+    const staffShiftNames = new Map<string, string[]>()
+    for (const a of assignments) {
+      if (!staffShiftNames.has(a.staff_id)) staffShiftNames.set(a.staff_id, [])
+      staffShiftNames.get(a.staff_id)!.push(a.shift_name)
+    }
+    for (const [staffId, shiftNames] of staffShiftNames) {
+      if (shiftNames.length >= config.max_consecutive_shifts) {
+        const s = staff.find(x => x.id === staffId)!
+        fatigue_flags.push({
+          staff_id: staffId,
+          staff_name: s.name,
+          shifts: shiftNames,
+          level: isHardBlock(rules, 'max_consecutive_shifts') ? 'blocked' : 'caution',
+          note: `${s.name} is on ${shiftNames.length} shifts today — confirm rest day tomorrow.`,
+          rule_key: 'max_consecutive_shifts',
+        })
+      }
     }
   }
 
-  // Hours warnings
+  // ── Hours warnings ────────────────────────────────────────────────────────
   const hours_warnings: SolverResult['hours_warnings'] = []
-  for (const s of staff) {
-    const todayHours = dailyHours.get(s.id) ?? 0
-    if (todayHours === 0) continue
 
-    if (todayHours > config.max_hours_per_day) {
-      hours_warnings.push({
-        staff_id: s.id,
-        staff_name: s.name,
-        assigned_hours_today: todayHours,
-        daily_limit: config.max_hours_per_day,
-        weekly_hours_so_far: s.weekly_hours_so_far,
-        weekly_hours_projected: s.weekly_hours_so_far + todayHours,
-        weekly_cap: null,
-        type: 'daily',
-      })
+  if (isActive(rules, 'max_hours_per_day')) {
+    const severity = rules.max_hours_per_day?.severity ?? 'warning'
+    for (const s of staff) {
+      const todayHours = dailyHours.get(s.id) ?? 0
+      if (todayHours > config.max_hours_per_day) {
+        hours_warnings.push({
+          staff_id: s.id,
+          staff_name: s.name,
+          assigned_hours_today: todayHours,
+          daily_limit: config.max_hours_per_day,
+          weekly_hours_so_far: s.weekly_hours_so_far,
+          weekly_hours_projected: s.weekly_hours_so_far + todayHours,
+          weekly_cap: null,
+          type: 'daily',
+          rule_key: 'max_hours_per_day',
+          severity,
+        })
+      }
     }
+  }
 
-    if (
-      (s.employment_type === 'part_time' || s.employment_type === 'casual') &&
-      s.contracted_hours_per_week != null
-    ) {
+  if (isActive(rules, 'weekly_hours_cap')) {
+    const severity = rules.weekly_hours_cap?.severity ?? 'warning'
+    for (const s of staff) {
+      if (
+        (s.employment_type !== 'part_time' && s.employment_type !== 'casual') ||
+        s.contracted_hours_per_week == null
+      ) continue
+      const todayHours = dailyHours.get(s.id) ?? 0
+      if (todayHours === 0) continue
       const projected = s.weekly_hours_so_far + todayHours
       if (projected > s.contracted_hours_per_week) {
         hours_warnings.push({
@@ -293,12 +378,14 @@ export function solve(input: SolverInput): SolverResult {
           weekly_hours_projected: projected,
           weekly_cap: s.contracted_hours_per_week,
           type: 'weekly',
+          rule_key: 'weekly_hours_cap',
+          severity,
         })
       }
     }
   }
 
-  // Weighted average score
+  // ── Overall score ─────────────────────────────────────────────────────────
   const totalAssigned = assignments.length
   const overall = totalAssigned > 0
     ? shift_scores.reduce((sum, ss) => {
@@ -323,6 +410,7 @@ function scoreShift(
   assigned: SolverStaff[],
   vicClients: SolverVICClient[],
   weights: SolverConfig['weights'],
+  rules: RuleConfigMap,
 ): SolverResult['shift_scores'][number] {
   if (!assigned.length) {
     return {
@@ -332,7 +420,7 @@ function scoreShift(
     }
   }
 
-  // 1. Skill coverage: check minimum counts by primary skill
+  // 1. Skill coverage
   const skillCounts = new Map<string, number>()
   for (const s of assigned) {
     const primary = s.skills.find(sk => sk.is_primary)
@@ -346,28 +434,36 @@ function scoreShift(
   // 2. VIC affiliation
   const assignedIds = new Set(assigned.map(s => s.id))
   const vicCovered = vicClients.filter(v => v.advisor_staff_ids.some(id => assignedIds.has(id))).length
+  const vicEffectiveWeight = isActive(rules, 'vic_coverage') ? weights.vic_affiliation : 0
   const vicScore = vicClients.length === 0 ? 1 : vicCovered / vicClients.length
   const vicOk = vicCovered === vicClients.length
 
-  // 3. Gender balance (30–70% female is ideal)
+  // 3. Gender balance
   const pctF = assigned.filter(s => s.gender === 'F').length / assigned.length
+  const genderEffectiveWeight = isActive(rules, 'gender_balance') ? weights.gender_balance : 0
   const genderScore = pctF >= 0.3 && pctF <= 0.7 ? 1 : 0.5
 
   // 4. Seniority
   const hasSenior = assigned.some(s => s.skills.some(sk => sk.is_senior_equivalent))
   const seniorityScore = hasSenior ? 1 : 0
 
-  // 5. Language coverage (score at 5 languages)
+  // 5. Language coverage
   const langs = new Set(assigned.flatMap(s => s.languages))
   const langScore = Math.min(langs.size / 5, 1)
 
-  const score = (
-    weights.skill_coverage    * skillScore +
-    weights.vic_affiliation   * vicScore +
-    weights.gender_balance    * genderScore +
-    weights.seniority         * seniorityScore +
-    weights.language_coverage * langScore
-  ) * 100
+  // Redistribute dropped weights so total stays at 100
+  const droppedWeight = (weights.vic_affiliation - vicEffectiveWeight) + (weights.gender_balance - genderEffectiveWeight)
+  const remainingBase = 1 - droppedWeight
+
+  const score = remainingBase > 0
+    ? (
+        weights.skill_coverage    * skillScore +
+        vicEffectiveWeight        * vicScore +
+        genderEffectiveWeight     * genderScore +
+        weights.seniority         * seniorityScore +
+        weights.language_coverage * langScore
+      ) / remainingBase * 100
+    : 0
 
   return {
     shift_id: shift.id,

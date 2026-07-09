@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { solve, type SolverStaff } from './solver.ts'
+import { solve, type SolverStaff, type RuleConfigMap } from './solver.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -56,20 +56,27 @@ Deno.serve(async (req) => {
       return json({ error: `boutique is closed on ${roster_date}: ${closure.reason ?? 'planned closure'}` }, 409)
     }
 
-    // ── Engine config ────────────────────────────────────────────────────────
-    const { data: engCfg, error: engErr } = await db
-      .from('boutique_engine_config')
-      .select('*')
-      .eq('boutique_id', boutique_id)
-      .single()
+    // ── Engine config + rule config + scoring weights (parallel) ────────────
+    const [
+      { data: engCfg, error: engErr },
+      { data: ruleRows },
+      { data: swRow },
+    ] = await Promise.all([
+      db.from('boutique_engine_config').select('*').eq('boutique_id', boutique_id).single(),
+      db.from('boutique_rule_config').select('rule_key, is_enabled, severity').eq('boutique_id', boutique_id),
+      db.from('scoring_weights')
+        .select('skill_coverage, vic_affiliation, gender_balance, seniority, language_coverage')
+        .eq('boutique_id', boutique_id)
+        .maybeSingle(),
+    ])
 
     if (engErr || !engCfg) return json({ error: 'engine config not found for boutique' }, 404)
 
-    const { data: swRow } = await db
-      .from('scoring_weights')
-      .select('skill_coverage, vic_affiliation, gender_balance, seniority, language_coverage')
-      .eq('boutique_id', boutique_id)
-      .maybeSingle()
+    // Build rule config map — missing rules default to enabled + warning
+    const rules: RuleConfigMap = {}
+    for (const r of ruleRows ?? []) {
+      rules[r.rule_key as keyof RuleConfigMap] = { is_enabled: r.is_enabled, severity: r.severity }
+    }
 
     const weights = swRow ?? {
       skill_coverage: 0.35, vic_affiliation: 0.25,
@@ -135,12 +142,37 @@ Deno.serve(async (req) => {
       .lte('valid_from', roster_date)
       .or(`valid_until.is.null,valid_until.gte.${roster_date}`)
 
-    const staffIds = (staffBoutiques ?? []).map((sb: any) => sb.staff_id)
+    let staffIds = (staffBoutiques ?? []).map((sb: any) => sb.staff_id)
     if (!staffIds.length) return json({ error: 'no staff found for this boutique' }, 404)
+
+    // ── Pre-filter: day-of-week availability (if rule is enabled as hard_block) ─
+    const dowRule = rules['day_of_week_availability']
+    if (dowRule?.is_enabled && dowRule.severity === 'hard_block') {
+      const { data: availDayRows } = await db
+        .from('staff_availability_days')
+        .select('staff_id')
+        .eq('boutique_id', boutique_id)
+        .eq('day_of_week', rosterDow)
+        .in('staff_id', staffIds)
+
+      // Staff with no rows in staff_availability_days are treated as available on all days
+      const { data: hasAnyDayRow } = await db
+        .from('staff_availability_days')
+        .select('staff_id')
+        .eq('boutique_id', boutique_id)
+        .in('staff_id', staffIds)
+
+      const staffWithDayConfig = new Set((hasAnyDayRow ?? []).map((r: any) => r.staff_id))
+      const staffAvailableToday = new Set((availDayRows ?? []).map((r: any) => r.staff_id))
+
+      staffIds = staffIds.filter((id: string) =>
+        !staffWithDayConfig.has(id) || staffAvailableToday.has(id)
+      )
+    }
 
     const [
       { data: staffRows },
-      { data: staffSkills },
+      { data: staffSkillsRaw },
       { data: shiftAvail },
       { data: unavailRows },
       { data: reqWorkRows },
@@ -149,7 +181,7 @@ Deno.serve(async (req) => {
         .select('id, name, gender, languages, seniority, employment_type, contracted_hours_per_week')
         .in('id', staffIds),
       db.from('staff_skills')
-        .select('staff_id, is_primary, skill_types(id, name, is_vic_eligible, is_senior_equivalent, engine_priority)')
+        .select('staff_id, is_primary, expires_at, skill_types(id, name, is_vic_eligible, is_senior_equivalent, engine_priority)')
         .in('staff_id', staffIds),
       db.from('staff_shift_availability')
         .select('staff_id, shift_id')
@@ -165,6 +197,14 @@ Deno.serve(async (req) => {
         .in('staff_id', staffIds)
         .eq('work_date', roster_date),
     ])
+
+    // ── Pre-filter: certification expiry (if rule is enabled) ────────────────
+    const certRule = rules['certification_expiry']
+    const staffSkills = certRule?.is_enabled
+      ? (staffSkillsRaw ?? []).filter((ss: any) =>
+          ss.expires_at == null || ss.expires_at >= roster_date
+        )
+      : (staffSkillsRaw ?? [])
 
     const requiredTodayIds = new Set((reqWorkRows ?? []).map((r: any) => r.staff_id))
 
@@ -287,6 +327,7 @@ Deno.serve(async (req) => {
       shifts: solverShifts,
       staff: solverStaff,
       vic_clients: vicClients,
+      rules,
       config: {
         target_headcount_per_shift: engCfg.target_headcount_per_shift,
         max_consecutive_shifts: engCfg.max_consecutive_shifts,
