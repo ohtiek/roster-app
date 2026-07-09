@@ -157,6 +157,84 @@ export interface StaffRow {
   availability_days: number[]   // 0=Sun … 6=Sat; empty = all days
 }
 
+// ─── Shifts ───────────────────────────────────────────────────────────────────
+
+export interface BoutiqueShift {
+  id: string
+  boutique_id: string
+  name: string
+  start_time: string   // "HH:MM:SS"
+  end_time: string
+  sort_order: number
+  valid_from: string   // "YYYY-MM-DD"
+  valid_until: string | null
+}
+
+export interface ShiftRequirement {
+  shift_id: string
+  skill_type_id: string
+  skill_type_name: string
+  min_count: number
+  max_count: number | null
+}
+
+export interface BoutiqueClosure {
+  id: string
+  closure_date: string   // "YYYY-MM-DD"
+  reason: string | null
+}
+
+// ─── Roster history ───────────────────────────────────────────────────────────
+
+export interface RosterHistoryRow {
+  id: string
+  roster_date: string
+  status: RosterStatus
+  overall_score: number | null
+  override_count: number
+  submit_deadline: string | null
+  approve_deadline: string | null
+  created_at: string
+}
+
+export interface RosterPayload {
+  date: string
+  boutique_id: string
+  overall_score: number
+  generated_at: string
+  engine_version?: number
+  shifts: RosterShiftResult[]
+  hours_warnings: RosterWarning[]
+  fatigue_flags: RosterWarning[]
+}
+
+export interface RosterShiftResult {
+  shift_id: string
+  shift_name: string
+  start_time: string
+  end_time: string
+  assigned: RosterAssignment[]
+  score: number
+  headcount: number
+  target_headcount: number
+  unmet_requirements: { skill: string; min_count: number; assigned: number }[]
+}
+
+export interface RosterAssignment {
+  staff_id: string
+  name: string
+  skill: string
+  score?: number
+}
+
+export interface RosterWarning {
+  staff_id: string
+  staff_name?: string
+  rule_key: string
+  severity: 'warning' | 'hard_block'
+  detail: string
+}
+
 // ─── Constraint violation ─────────────────────────────────────────────────────
 
 export type ViolationSeverity = 'warning' | 'error'
