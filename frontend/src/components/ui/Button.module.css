@@ -1,0 +1,64 @@
+:root {
+  --btn-accent: #B8973A;
+  --btn-accent-hover: #A07C28;
+  --btn-border: #D8D5CE;
+  --btn-surface: #fff;
+  --btn-text: #1A1F2B;
+  --btn-muted: #6B7280;
+  --btn-danger: #B81A1A;
+  --btn-danger-hover: #9A1212;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --btn-border: #2A3550; --btn-surface: #1A2438; --btn-text: #E4E0D8;
+    --btn-muted: #8090A8; --btn-accent: #C9A84C; --btn-accent-hover: #B8973A;
+  }
+}
+:root[data-theme="light"] {
+  --btn-border: #D8D5CE; --btn-surface: #fff; --btn-text: #1A1F2B;
+  --btn-muted: #6B7280; --btn-accent: #B8973A; --btn-accent-hover: #A07C28;
+}
+:root[data-theme="dark"] {
+  --btn-border: #2A3550; --btn-surface: #1A2438; --btn-text: #E4E0D8;
+  --btn-muted: #8090A8; --btn-accent: #C9A84C; --btn-accent-hover: #B8973A;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  font-family: inherit;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--btn-accent); outline-offset: 2px; }
+
+.sm { padding: 0.3rem 0.65rem; font-size: 12.5px; }
+.md { padding: 0.45rem 0.85rem; }
+
+.primary { background: var(--btn-accent); color: #fff; border-color: var(--btn-accent); }
+.primary:not(:disabled):hover { background: var(--btn-accent-hover); border-color: var(--btn-accent-hover); }
+
+.secondary { background: var(--btn-surface); color: var(--btn-text); border-color: var(--btn-border); }
+.secondary:not(:disabled):hover { border-color: var(--btn-accent); color: var(--btn-accent); }
+
+.ghost { background: transparent; color: var(--btn-muted); border-color: transparent; }
+.ghost:not(:disabled):hover { background: rgba(0,0,0,0.05); color: var(--btn-text); }
+
+.danger { background: var(--btn-danger); color: #fff; border-color: var(--btn-danger); }
+.danger:not(:disabled):hover { background: var(--btn-danger-hover); border-color: var(--btn-danger-hover); }
+
+.spinner {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
