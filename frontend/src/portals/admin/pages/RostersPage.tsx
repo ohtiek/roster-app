@@ -102,12 +102,22 @@ export function RostersPage({ session }: Props) {
     setGenRunning(true); setGenError(null); setGenResult(null)
 
     const { data, error: err } = await supabase.functions.invoke('generate-roster', {
-      body: { boutique_id: boutiqueId, date: genDate },
+      body: { boutique_id: boutiqueId, roster_date: genDate },
     })
 
     setGenRunning(false)
     if (err || data?.error) {
-      setGenError(err?.message ?? data?.error ?? 'Generation failed')
+      let message = data?.error ?? err?.message ?? 'Generation failed'
+      const context = (err as { context?: Response })?.context
+      if (context) {
+        try {
+          const body = await context.clone().json()
+          if (body?.error) message = body.error
+        } catch {
+          // response body wasn't JSON — fall back to the generic message
+        }
+      }
+      setGenError(message)
       return
     }
 
