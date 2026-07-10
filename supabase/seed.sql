@@ -124,32 +124,16 @@ ON CONFLICT (staff_id, skill_type_id) DO NOTHING;
 -- 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
 
 INSERT INTO staff_availability_days (staff_id, boutique_id, day_of_week)
-SELECT s.staff_id, s.boutique_id, d.day
+SELECT v.staff_id::uuid, v.boutique_id::uuid, d.day
 FROM (VALUES
-  -- Marcus Webb (part-time Sydney): Mon–Fri only
-  ('20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000001'),
-  -- Lena Kovacs (casual Sydney): Wed–Sun
-  ('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001'),
-  -- Zoe Williams (casual Melbourne): Thu–Sun
-  ('20000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000002')
-) AS s(staff_id, boutique_id)
-CROSS JOIN (VALUES (1),(2),(3),(4),(5)) AS d(day)   -- Mon–Fri for Marcus
-WHERE s.staff_id = '20000000-0000-0000-0000-000000000006'
-
-UNION ALL
-
-SELECT '20000000-0000-0000-0000-000000000010'::uuid,
-       '00000000-0000-0000-0000-000000000001'::uuid,
-       d.day
-FROM (VALUES (0),(3),(4),(5),(6)) AS d(day)          -- Sun, Wed–Sat for Lena
-
-UNION ALL
-
-SELECT '20000000-0000-0000-0000-000000000016'::uuid,
-       '00000000-0000-0000-0000-000000000002'::uuid,
-       d.day
-FROM (VALUES (0),(4),(5),(6)) AS d(day)               -- Sun, Thu–Sat for Zoe
-
+  -- Marcus Webb (part-time Sydney): Mon–Fri
+  ('20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000001', ARRAY[1,2,3,4,5]),
+  -- Lena Kovacs (casual Sydney): Sun, Wed–Sat
+  ('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001', ARRAY[0,3,4,5,6]),
+  -- Zoe Williams (casual Melbourne): Sun, Thu–Sat
+  ('20000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000002', ARRAY[0,4,5,6])
+) AS v(staff_id, boutique_id, days)
+CROSS JOIN LATERAL unnest(v.days) AS d(day)
 ON CONFLICT (staff_id, boutique_id, day_of_week) DO NOTHING;
 
 -- ── 6. Boutique shifts ────────────────────────────────────────────────────────
