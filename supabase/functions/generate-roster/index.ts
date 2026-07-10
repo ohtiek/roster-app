@@ -3,6 +3,7 @@ import { solve, type SolverStaff, type RuleConfigMap } from './solver.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +40,18 @@ Deno.serve(async (req) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(roster_date)) {
       return json({ error: 'roster_date must be YYYY-MM-DD' }, 400)
     }
+
+    // Identify the caller so roster_history.created_by is set — RLS's
+    // roster_update_admin policy requires created_by = auth.uid() before an
+    // admin can submit their own draft, and this function writes via the
+    // service role (which bypasses RLS and would otherwise leave it null).
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    })
+    const { data: callerData } = await callerClient.auth.getUser()
+    const callerId = callerData?.user?.id ?? null
 
     const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
@@ -365,7 +378,7 @@ Deno.serve(async (req) => {
       // Per-shift re-run: merge into existing draft
       const { data: existing } = await db
         .from('roster_history')
-        .select('id, payload')
+        .select('id, payload, created_by')
         .eq('boutique_id', boutique_id)
         .eq('roster_date', roster_date)
         .eq('status', 'draft')
@@ -375,18 +388,21 @@ Deno.serve(async (req) => {
         const merged = mergeShiftIntoPayload(existing.payload, shift_id, result, shiftsRaw)
         await db
           .from('roster_history')
-          .update({ payload: merged, overall_score: merged.overall_score, solver_used: result.solver_used })
+          .update({
+            payload: merged, overall_score: merged.overall_score, solver_used: result.solver_used,
+            created_by: existing.created_by ?? callerId,
+          })
           .eq('id', existing.id)
       } else {
         await db.from('roster_history').insert({
-          boutique_id, roster_date, status: 'draft',
+          boutique_id, roster_date, status: 'draft', created_by: callerId,
           overall_score: result.overall_score, solver_used: result.solver_used, payload,
         })
       }
     } else {
       const { data: existing } = await db
         .from('roster_history')
-        .select('id')
+        .select('id, created_by')
         .eq('boutique_id', boutique_id)
         .eq('roster_date', roster_date)
         .eq('status', 'draft')
@@ -394,11 +410,14 @@ Deno.serve(async (req) => {
 
       if (existing) {
         await db.from('roster_history')
-          .update({ payload, overall_score: result.overall_score, solver_used: result.solver_used })
+          .update({
+            payload, overall_score: result.overall_score, solver_used: result.solver_used,
+            created_by: existing.created_by ?? callerId,
+          })
           .eq('id', existing.id)
       } else {
         await db.from('roster_history').insert({
-          boutique_id, roster_date, status: 'draft',
+          boutique_id, roster_date, status: 'draft', created_by: callerId,
           overall_score: result.overall_score, solver_used: result.solver_used, payload,
         })
       }

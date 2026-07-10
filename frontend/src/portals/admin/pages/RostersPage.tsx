@@ -58,6 +58,7 @@ export function RostersPage({ session }: Props) {
 
   // status action
   const [actionSaving, setActionSaving] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   // ── Load ────────────────────────────────────────────────────────────────────
 
@@ -129,12 +130,22 @@ export function RostersPage({ session }: Props) {
   // ── Status actions ──────────────────────────────────────────────────────────
 
   const setStatus = useCallback(async (id: string, status: RosterStatus) => {
-    setActionSaving(id)
+    setActionSaving(id); setActionError(null)
     const patch: Record<string, unknown> = { status }
     if (status === 'submitted') patch.submitted_at = new Date().toISOString()
 
-    await supabase.from('roster_history').update(patch).eq('id', id)
+    const { data, error: err } = await supabase
+      .from('roster_history').update(patch).eq('id', id).select('id')
+
     setActionSaving(null)
+    if (err) {
+      setActionError(err.message)
+      return
+    }
+    if (!data || data.length === 0) {
+      setActionError('Update did not apply — you may not have permission to change this roster.')
+      return
+    }
     await load()
   }, [load])
 
@@ -181,6 +192,7 @@ export function RostersPage({ session }: Props) {
       {/* ── Table ── */}
       {loading && <p className={styles.statusMsg}>Loading…</p>}
       {error && <p className={styles.errorMsg}>{error}</p>}
+      {actionError && <p className={styles.errorMsg}>{actionError}</p>}
 
       {!loading && !error && (
         <>
