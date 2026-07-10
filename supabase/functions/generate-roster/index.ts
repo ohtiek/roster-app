@@ -275,6 +275,11 @@ Deno.serve(async (req) => {
       })
     }
 
+    // No rows for a staff member = available for every active shift today,
+    // matching the same convention used by staff_availability_days — this
+    // table has no admin UI to configure it, so an empty set must not mean
+    // "available for nothing."
+    const allShiftIds = new Set(shiftIds)
     const availShiftsByStaff = new Map<string, Set<string>>()
     for (const a of shiftAvail ?? []) {
       if (!availShiftsByStaff.has(a.staff_id)) availShiftsByStaff.set(a.staff_id, new Set())
@@ -305,7 +310,7 @@ Deno.serve(async (req) => {
       employment_type: s.employment_type,
       contracted_hours_per_week: s.contracted_hours_per_week,
       skills: skillsByStaff.get(s.id) ?? [],
-      available_shift_ids: availShiftsByStaff.get(s.id) ?? new Set(),
+      available_shift_ids: availShiftsByStaff.get(s.id) ?? allShiftIds,
       unavailable_shift_ids: unavailByStaff.get(s.id) ?? new Set(),
       required_today: requiredTodayIds.has(s.id),
       weekly_hours_so_far: weeklyHoursMap.get(s.id) ?? 0,
