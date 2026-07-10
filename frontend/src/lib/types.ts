@@ -12,6 +12,11 @@ export interface UserBoutiqueRole {
   boutique_name?: string
 }
 
+export interface BoutiqueOption {
+  id: string
+  name: string
+}
+
 export interface SessionContext {
   userId: string
   email: string
@@ -24,6 +29,10 @@ export interface SessionContext {
   isRegionalAdmin: boolean
   // Active boutique for the current session (admin/approver may switch)
   activeBoutiqueId: string | null
+  // Boutiques the user can switch between — all boutiques for regional_admin,
+  // or the boutiques where they hold an admin/approver role otherwise
+  availableBoutiques: BoutiqueOption[]
+  setActiveBoutiqueId: (boutiqueId: string) => void
 }
 
 // ─── Staff ────────────────────────────────────────────────────────────────────

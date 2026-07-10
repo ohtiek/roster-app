@@ -73,10 +73,21 @@ export function AppShell({ session, children }: Props) {
 
         {!collapsed && (
           <div className={styles.portalBadge}>
-            {PORTAL_LABEL[session.portal]}
-            {session.activeBoutiqueId && session.boutiqueRoles.find(r => r.boutique_id === session.activeBoutiqueId)?.boutique_name
-              ? ` · ${session.boutiqueRoles.find(r => r.boutique_id === session.activeBoutiqueId)?.boutique_name}`
-              : ''}
+            <span>{PORTAL_LABEL[session.portal]}</span>
+            {session.availableBoutiques.length > 1 ? (
+              <select
+                className={styles.boutiqueSelect}
+                value={session.activeBoutiqueId ?? ''}
+                onChange={e => session.setActiveBoutiqueId(e.target.value)}
+                aria-label="Active boutique"
+              >
+                {session.availableBoutiques.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            ) : session.availableBoutiques[0] ? (
+              <span className={styles.boutiqueName}> · {session.availableBoutiques[0].name}</span>
+            ) : null}
           </div>
         )}
 
