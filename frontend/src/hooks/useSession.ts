@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import type { SessionContext, Portal, UserBoutiqueRole } from '../lib/types'
+import type { SessionContext, Portal, UserBoutiqueRole, BoutiqueOption } from '../lib/types'
 
 export type SessionState =
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'authenticated'; session: SessionContext }
 
-async function resolveSession(user: User): Promise<SessionContext> {
+const ACTIVE_BOUTIQUE_STORAGE_KEY = 'roster_active_boutique_id'
+
+type ResolvedSession = Omit<SessionContext, 'setActiveBoutiqueId'>
+
+async function resolveSession(user: User): Promise<ResolvedSession> {
   // Fetch boutique roles
   const { data: roles } = await supabase
     .from('user_boutique_roles')
@@ -48,10 +52,36 @@ async function resolveSession(user: User): Promise<SessionContext> {
     portal = 'staff'
   }
 
+  // Boutiques the user can switch between:
+  // - regional_admin sees every active boutique
+  // - admin/approver see only the boutique(s) they hold that role at
+  let availableBoutiques: BoutiqueOption[] = []
+  if (isRegionalAdmin) {
+    const { data: allBoutiques } = await supabase
+      .from('boutiques')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name')
+    availableBoutiques = allBoutiques ?? []
+  } else {
+    const seen = new Set<string>()
+    for (const r of boutiqueRoles) {
+      if ((r.role === 'admin' || r.role === 'approver') && r.boutique_id && !seen.has(r.boutique_id)) {
+        seen.add(r.boutique_id)
+        availableBoutiques.push({ id: r.boutique_id, name: r.boutique_name ?? 'Boutique' })
+      }
+    }
+  }
+
   const adminBoutique = boutiqueRoles.find(r => r.role === 'admin')
+
+  const storedBoutiqueId = localStorage.getItem(ACTIVE_BOUTIQUE_STORAGE_KEY)
+  const storedIsValid = !!storedBoutiqueId && availableBoutiques.some(b => b.id === storedBoutiqueId)
+
   const activeBoutiqueId =
+    (storedIsValid ? storedBoutiqueId : null) ??
     adminBoutique?.boutique_id ??
-    boutiqueRoles[0]?.boutique_id ??
+    availableBoutiques[0]?.id ??
     (staffRow as any)?.staff_boutiques?.[0]?.boutique_id ??
     null
 
@@ -64,11 +94,21 @@ async function resolveSession(user: User): Promise<SessionContext> {
     staffBoutiqueId: (staffRow as any)?.staff_boutiques?.[0]?.boutique_id,
     isRegionalAdmin,
     activeBoutiqueId,
+    availableBoutiques,
   }
 }
 
 export function useSession(): SessionState {
   const [state, setState] = useState<SessionState>({ status: 'loading' })
+
+  function setActiveBoutiqueId(boutiqueId: string) {
+    localStorage.setItem(ACTIVE_BOUTIQUE_STORAGE_KEY, boutiqueId)
+    setState(prev =>
+      prev.status === 'authenticated'
+        ? { status: 'authenticated', session: { ...prev.session, activeBoutiqueId: boutiqueId } }
+        : prev
+    )
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -77,7 +117,7 @@ export function useSession(): SessionState {
         return
       }
       const ctx = await resolveSession(session.user)
-      setState({ status: 'authenticated', session: ctx })
+      setState({ status: 'authenticated', session: { ...ctx, setActiveBoutiqueId } })
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -88,7 +128,7 @@ export function useSession(): SessionState {
         }
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           const ctx = await resolveSession(session.user)
-          setState({ status: 'authenticated', session: ctx })
+          setState({ status: 'authenticated', session: { ...ctx, setActiveBoutiqueId } })
         }
       }
     )
