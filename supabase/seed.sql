@@ -35,14 +35,14 @@ VALUES
   ('20000000-0000-0000-0000-000000000007', 'Priya Sharma',      'Jr. Stylist',     'junior',  'F', ARRAY['Hindi','English'],               'full_time',  38, '#9D174D'),
   ('20000000-0000-0000-0000-000000000008', 'Tom Fletcher',      'Stock Associate', 'junior',  'M', ARRAY['English'],                       'part_time',  24, '#92400E'),
   ('20000000-0000-0000-0000-000000000009', 'Yuki Tanaka',       'Sr. Stylist',     'senior',  'F', ARRAY['Japanese','English'],            'full_time',  38, '#4F46E5'),
-  ('20000000-0000-0000-0000-000000000010', 'Lena Kovacs',       'Jr. Stylist',     'junior',  'F', ARRAY['Hungarian','English'],           'casual',      0, '#0F766E'),
+  ('20000000-0000-0000-0000-000000000010', 'Lena Kovacs',       'Jr. Stylist',     'junior',  'F', ARRAY['Hungarian','English'],           'casual',      NULL, '#0F766E'),
   -- Melbourne
   ('20000000-0000-0000-0000-000000000011', 'David Nguyen',      'Floor Manager',   'manager', 'M', ARRAY['Vietnamese','English'],          'full_time',  38, '#1E40AF'),
   ('20000000-0000-0000-0000-000000000012', 'Chloe Martin',      'Sr. Stylist',     'senior',  'F', ARRAY['French','English'],              'full_time',  38, '#7C2D12'),
   ('20000000-0000-0000-0000-000000000013', 'Ryan O''Brien',     'Jr. Stylist',     'junior',  'M', ARRAY['English'],                       'full_time',  38, '#166534'),
   ('20000000-0000-0000-0000-000000000014', 'Ananya Iyer',       'VIC Advisor',     'senior',  'F', ARRAY['Tamil','Hindi','English'],       'full_time',  38, '#6D28D9'),
   ('20000000-0000-0000-0000-000000000015', 'Ben Carter',        'Cashier',         'junior',  'M', ARRAY['English'],                       'part_time',  20, '#0369A1'),
-  ('20000000-0000-0000-0000-000000000016', 'Zoe Williams',      'Jr. Stylist',     'junior',  'F', ARRAY['English'],                       'casual',      0, '#C2410C')
+  ('20000000-0000-0000-0000-000000000016', 'Zoe Williams',      'Jr. Stylist',     'junior',  'F', ARRAY['English'],                       'casual',      NULL, '#C2410C')
 ON CONFLICT (id) DO NOTHING;
 
 -- ── 3. Staff ↔ Boutiques ──────────────────────────────────────────────────────
