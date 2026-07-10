@@ -235,6 +235,54 @@ export interface RosterWarning {
   detail: string
 }
 
+// ─── VIC ──────────────────────────────────────────────────────────────────────
+
+export type VicTier = 'platinum' | 'gold' | 'silver'
+export type VicApptStatus = 'confirmed' | 'tentative' | 'cancelled' | 'no_show' | 'visited'
+
+export interface VicClient {
+  id: string
+  name: string
+  tier: VicTier | null
+  preferred_languages: string[] | null
+}
+
+export interface VicAdvisorRow {
+  vic_client_id: string
+  staff_id: string
+  staff_name: string
+}
+
+export interface VicAppointment {
+  id: string
+  vic_client_id: string
+  appointment_date: string
+  shift_id: string | null
+  shift_name?: string
+  assigned_advisor_id: string | null
+  assigned_advisor_name?: string
+  status: VicApptStatus
+  notes: string | null
+}
+
+// ─── Leave ────────────────────────────────────────────────────────────────────
+
+export type LeaveSource = 'leave_system' | 'ad_hoc' | 'manual'
+export type LeaveType = 'annual' | 'sick' | 'toil' | 'parental' | 'public_holiday' | 'unpaid' | 'other'
+
+export interface StaffLeaveRow {
+  id: string
+  staff_id: string
+  staff_name: string
+  starts_at: string
+  ends_at: string
+  source: LeaveSource
+  source_ref: string | null
+  leave_type: LeaveType | null
+  reason: string | null
+  created_at: string
+}
+
 // ─── Constraint violation ─────────────────────────────────────────────────────
 
 export type ViolationSeverity = 'warning' | 'error'
