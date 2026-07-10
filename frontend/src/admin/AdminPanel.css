@@ -16,6 +16,28 @@
   --surface2: #F5F3ED;
   --sidebar-w: 220px;
   --header-h: 56px;
+
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  --color-background-primary: var(--surface);
+  --color-background-secondary: var(--surface2);
+  --color-background-danger: #FCEBEB;
+  --color-background-success: #EAF6E8;
+  --color-background-warning: #FBF1DD;
+
+  --color-border-secondary: rgba(0,0,0,0.15);
+  --color-border-tertiary: var(--rule);
+  --color-border-danger: #E8A6A5;
+  --color-border-success: #A9CC9F;
+  --color-border-warning: #E8C77A;
+
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--muted);
+  --color-text-tertiary: #9a9a9a;
+  --color-text-danger: #B3261E;
+  --color-text-success: #27500A;
+  --color-text-warning: #BA7517;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
