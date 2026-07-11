@@ -230,3 +230,23 @@
 }
 .input:focus { outline: none; border-color: var(--dash-accent); }
 .formError { grid-column: 1/-1; font-size: 13px; color: #d9534f; margin: 0; }
+
+@media (max-width: 640px) {
+  .content { padding: 1rem; gap: 1rem; }
+
+  .shiftRow { flex-wrap: wrap; padding: 0.85rem 1rem; }
+  .shiftInfo { flex-basis: 100%; order: 1; }
+  .reqSummary { flex-basis: 100%; order: 3; }
+  .shiftActions { order: 2; margin-left: auto; }
+
+  .reqPanel { padding: 0 1rem 1rem 1rem; }
+  .addReqRow { flex-wrap: wrap; }
+
+  .closureRow { flex-wrap: wrap; gap: 0.4rem 1rem; }
+  .addClosureRow { flex-wrap: wrap; padding: 0.85rem 1rem; }
+  .closureReasonInput { max-width: none; flex-basis: 100%; }
+  .closureList { padding: 0 1rem; }
+
+  .shiftFormGrid { grid-template-columns: 1fr; }
+  .statusMsg, .empty, .errorMsg { padding: 1rem; }
+}

@@ -244,3 +244,12 @@
 .genSuccess { display: flex; align-items: center; gap: 0.75rem; }
 .successIcon { font-size: 22px; color: #16a34a; }
 .genSuccess p { font-size: 14px; color: var(--dash-text); margin: 0; }
+
+@media (max-width: 640px) {
+  .toolbar { padding: 0.85rem 1rem; }
+  .table th, .table td { padding: 0.6rem 0.7rem; }
+  .detailPanel { padding: 1rem 1rem 1.25rem 1.75rem; }
+  .actionGroup { flex-wrap: wrap; }
+  .statusMsg, .count, .errorMsg { padding-left: 1rem; padding-right: 1rem; }
+  .shiftGrid { grid-template-columns: 1fr; }
+}

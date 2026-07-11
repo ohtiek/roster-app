@@ -256,3 +256,19 @@
 }
 .input:focus { outline: none; border-color: var(--dash-accent); }
 .formError { grid-column: 1/-1; font-size: 13px; color: #d9534f; margin: 0; }
+
+@media (max-width: 640px) {
+  .toolbar { padding: 0.85rem 1rem; flex-wrap: wrap; }
+  .search { max-width: none; flex-basis: 100%; order: 2; }
+  .content { padding: 1rem; }
+
+  .clientRow { flex-wrap: wrap; padding: 0.85rem 0.75rem; }
+  .clientInfo { flex-basis: 100%; min-width: 0; order: 1; }
+  .advisorPills { flex-basis: 100%; order: 3; }
+  .rowActions { order: 2; margin-left: auto; }
+
+  .detailPanel { padding: 1rem 0.75rem 1.25rem 1.75rem; }
+  .detailLabelRow { flex-wrap: wrap; gap: 0.4rem; }
+
+  .formGrid { grid-template-columns: 1fr; }
+}

@@ -32,3 +32,8 @@
   margin: 0.25rem 0 0;
 }
 .actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .header { padding: 1.25rem 1rem 1rem; }
+  .title { font-size: 1.15rem; }
+}
