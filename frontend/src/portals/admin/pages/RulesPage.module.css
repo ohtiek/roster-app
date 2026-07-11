@@ -69,7 +69,7 @@
 }
 .ruleRow:hover { background: var(--dash-hover); }
 
-.ruleInfo { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+.ruleInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
 
 .ruleName {
   font-size: 13.5px; font-weight: 500;
@@ -149,3 +149,13 @@
 
 .ok { color: #4caf50; }
 .bad { color: #d9534f; }
+
+@media (max-width: 640px) {
+  .content { padding: 1rem; gap: 1rem; }
+  .ruleRow { flex-wrap: wrap; gap: 0.6rem; padding: 0.85rem 1rem; }
+  .ruleControls { flex-basis: 100%; justify-content: space-between; }
+  .thresholdGrid { grid-template-columns: 1fr; padding: 0 1rem 1rem; }
+  .cardDesc { margin: 0.35rem 1rem 0.75rem; }
+  .cardTitle { padding: 1rem 1rem 0; }
+  .groupLabel, .saveRow { padding-left: 1rem; padding-right: 1rem; }
+}

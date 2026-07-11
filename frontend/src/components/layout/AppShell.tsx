@@ -48,6 +48,7 @@ interface Props {
 
 export function AppShell({ session, children }: Props) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
   const navItems = NAV[session.portal] ?? []
 
@@ -65,10 +66,36 @@ export function AppShell({ session, children }: Props) {
 
   return (
     <div className={styles.shell} data-collapsed={collapsed}>
-      <aside className={styles.sidebar}>
+      <header className={styles.mobileBar}>
+        <button
+          className={styles.mobileMenuBtn}
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+        >
+          <span className={styles.hamburger} />
+        </button>
+        <span className={styles.mobileBrand}>
+          <span className={styles.brandMark}>R</span>
+          Roster
+        </span>
+        <span className={styles.mobileSpacer} />
+      </header>
+
+      {mobileOpen && (
+        <div className={styles.backdrop} onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.brand}>
           <span className={styles.brandMark}>R</span>
           {!collapsed && <span className={styles.brandName}>Roster</span>}
+          <button
+            className={styles.mobileCloseBtn}
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+          >
+            &#x2715;
+          </button>
         </div>
 
         {!collapsed && (
@@ -97,6 +124,7 @@ export function AppShell({ session, children }: Props) {
               key={item.to}
               to={item.to}
               end={item.to === '/admin' || item.to === '/approvals' || item.to === '/staff' || item.to === '/view'}
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
               }
