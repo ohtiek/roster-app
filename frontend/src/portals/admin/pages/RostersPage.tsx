@@ -133,6 +133,7 @@ export function RostersPage({ session }: Props) {
     setActionSaving(id); setActionError(null)
     const patch: Record<string, unknown> = { status }
     if (status === 'submitted') patch.submitted_at = new Date().toISOString()
+    if (status === 'draft') patch.submitted_at = null   // withdraw: no longer submitted
 
     const { data, error: err } = await supabase
       .from('roster_history').update(patch).eq('id', id).select('id')
@@ -253,6 +254,12 @@ export function RostersPage({ session }: Props) {
                                 <Button variant="secondary" size="sm" loading={saving}
                                   onClick={() => setStatus(roster.id, 'submitted')}>
                                   Submit
+                                </Button>
+                              )}
+                              {roster.status === 'submitted' && (
+                                <Button variant="ghost" size="sm" loading={saving}
+                                  onClick={() => setStatus(roster.id, 'draft')}>
+                                  Withdraw
                                 </Button>
                               )}
                               {roster.status === 'submitted' && session.isRegionalAdmin && (
