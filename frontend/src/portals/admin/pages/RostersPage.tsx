@@ -390,9 +390,11 @@ function RosterDetail({ payload }: { payload: RosterPayload }) {
             <div key={shift.shift_id} className={styles.shiftBlock}>
               <div className={styles.shiftBlockHeader}>
                 <span className={styles.shiftBlockName}>{shift.shift_name}</span>
-                <span className={`${styles.headcount} ${shift.headcount < payload.target_headcount_per_shift ? styles.warn : ''}`}>
-                  {shift.headcount}/{payload.target_headcount_per_shift}
-                </span>
+                {payload.target_headcount_per_shift != null && (
+                  <span className={`${styles.headcount} ${(shift.headcount ?? 0) < payload.target_headcount_per_shift ? styles.warn : ''}`}>
+                    {shift.headcount ?? assigned.length}/{payload.target_headcount_per_shift}
+                  </span>
+                )}
               </div>
 
               <div className={styles.assignList}>
@@ -421,11 +423,11 @@ function RosterDetail({ payload }: { payload: RosterPayload }) {
                 )}
                 <span className={styles.mixChip}>{pctFemale}% F / {100 - pctFemale}% M</span>
               </div>
-              {shift.languages.length > 0 && (
+              {(shift.languages ?? []).length > 0 && (
                 <div className={styles.langRow}>Languages: {shift.languages.join(', ')}</div>
               )}
 
-              {shift.unmet_requirements.length > 0 && (
+              {(shift.unmet_requirements ?? []).length > 0 && (
                 <div className={styles.unmetList}>
                   {shift.unmet_requirements.map((u, i) => (
                     <span key={i} className={styles.unmetChip}>
