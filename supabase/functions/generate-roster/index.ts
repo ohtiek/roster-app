@@ -371,6 +371,7 @@ Deno.serve(async (req) => {
       fatigue_flags: result.fatigue_flags,
       hours_warnings: result.hours_warnings,
       solver_used: result.solver_used,
+      target_headcount_per_shift: result.target_headcount_per_shift,
       generated_at: new Date().toISOString(),
     }
 

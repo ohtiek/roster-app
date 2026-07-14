@@ -119,7 +119,9 @@ export interface SolverResult {
     shift_id: string
     shift_name: string
     score: number
+    headcount: number
     skill_ok: boolean
+    unmet_requirements: Array<{ skill_name: string; min_count: number; assigned: number }>
     vic_ok: boolean
     gender_pct_female: number
     languages: string[]
@@ -153,6 +155,7 @@ export interface SolverResult {
   }>
   overall_score: number
   solver_used: string
+  target_headcount_per_shift: number
 }
 
 // ── Main solver ─────────────────────────────────────────────────────────────
@@ -402,6 +405,7 @@ export function solve(input: SolverInput): SolverResult {
     hours_warnings,
     overall_score: Math.round(overall * 10) / 10,
     solver_used: 'greedy-db',
+    target_headcount_per_shift: config.target_headcount_per_shift,
   }
 }
 
@@ -415,7 +419,11 @@ function scoreShift(
   if (!assigned.length) {
     return {
       shift_id: shift.id, shift_name: shift.name,
-      score: 0, skill_ok: false, vic_ok: false,
+      score: 0, headcount: 0, skill_ok: false,
+      unmet_requirements: shift.requirements.map(r => ({
+        skill_name: r.skill_name, min_count: r.min_count, assigned: 0,
+      })),
+      vic_ok: false,
       gender_pct_female: 0, languages: [], seniority_ok: false,
     }
   }
@@ -430,6 +438,12 @@ function scoreShift(
   const skillScore = skillOk ? 1 : shift.requirements.reduce((a, r) => {
     return a + Math.min((skillCounts.get(r.skill_type_id) ?? 0) / r.min_count, 1)
   }, 0) / Math.max(shift.requirements.length, 1)
+  const unmetRequirements = shift.requirements
+    .filter(r => (skillCounts.get(r.skill_type_id) ?? 0) < r.min_count)
+    .map(r => ({
+      skill_name: r.skill_name, min_count: r.min_count,
+      assigned: skillCounts.get(r.skill_type_id) ?? 0,
+    }))
 
   // 2. VIC affiliation
   const assignedIds = new Set(assigned.map(s => s.id))
@@ -469,7 +483,9 @@ function scoreShift(
     shift_id: shift.id,
     shift_name: shift.name,
     score: Math.round(score * 10) / 10,
+    headcount: assigned.length,
     skill_ok: skillOk,
+    unmet_requirements: unmetRequirements,
     vic_ok: vicOk,
     gender_pct_female: Math.round(pctF * 100) / 100,
     languages: [...langs].sort(),

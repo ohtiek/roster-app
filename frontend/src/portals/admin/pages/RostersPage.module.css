@@ -208,6 +208,12 @@
 .assignName { font-weight: 500; color: var(--dash-text); }
 .assignSkill { color: var(--dash-muted); }
 
+.vicBadge {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
+  background: rgba(184,151,58,0.15); color: var(--dash-accent);
+  border-radius: 3px; padding: 1px 5px;
+}
+
 .unmetList { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.5rem; }
 
 .unmetChip {
@@ -217,6 +223,69 @@
   border-radius: 4px;
   padding: 2px 6px;
 }
+
+/* ── Staff mix ── */
+.mixRow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 0.6rem; }
+
+.mixChip {
+  font-size: 11.5px; font-weight: 500;
+  background: var(--dash-hover);
+  border: 1px solid var(--dash-border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  color: var(--dash-text);
+}
+.mixChip.mixOk  { border-color: rgba(22,163,74,0.4);  color: #16a34a; }
+.mixChip.mixBad { border-color: rgba(220,38,38,0.4);  color: #dc2626; }
+
+.langRow { font-size: 11.5px; color: var(--dash-muted); margin-top: 0.4rem; }
+
+/* ── Rule flags ── */
+.flagsSection {
+  border-top: 1px solid var(--dash-border);
+  padding-top: 0.85rem;
+}
+.flagsTitle {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--dash-muted);
+  margin: 0 0 0.6rem;
+}
+.flagsList { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.flagRow {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem;
+  font-size: 12.5px;
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+}
+
+.flagSeverity {
+  font-size: 11px; font-weight: 600;
+  border-radius: 4px; padding: 1px 7px;
+  flex-shrink: 0;
+}
+.flagSeverity.flagHard { background: rgba(220,38,38,0.12); color: #dc2626; }
+.flagSeverity.flagWarn { background: rgba(196,125,16,0.12); color: #c47d10; }
+
+.flagRule {
+  font-size: 11.5px; color: var(--dash-accent);
+  flex-shrink: 0;
+}
+.flagStaff { font-weight: 500; color: var(--dash-text); flex-shrink: 0; }
+.flagDetail { color: var(--dash-muted); }
+
+/* ── VIC coverage ── */
+.vicList { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.vicChip {
+  font-size: 12px; font-weight: 500;
+  border-radius: 4px; padding: 3px 8px;
+  border: 1px solid var(--dash-border);
+}
+.vicChip.vicOk  { border-color: rgba(22,163,74,0.4);  color: #16a34a; background: rgba(22,163,74,0.08); }
+.vicChip.vicBad { border-color: rgba(220,38,38,0.4);  color: #dc2626; background: rgba(220,38,38,0.08); }
 
 /* ── Status/count lines ── */
 .statusMsg, .count {
