@@ -207,41 +207,66 @@ export interface RosterHistoryRow {
 }
 
 export interface RosterPayload {
-  date: string
-  boutique_id: string
   overall_score: number
   generated_at: string
-  engine_version?: number
-  shifts: RosterShiftResult[]
-  hours_warnings: RosterWarning[]
-  fatigue_flags: RosterWarning[]
-}
-
-export interface RosterShiftResult {
-  shift_id: string
-  shift_name: string
-  start_time: string
-  end_time: string
-  assigned: RosterAssignment[]
-  score: number
-  headcount: number
-  target_headcount: number
-  unmet_requirements: { skill: string; min_count: number; assigned: number }[]
+  solver_used: string
+  target_headcount_per_shift: number
+  assignments: RosterAssignment[]
+  shift_scores: RosterShiftScore[]
+  vic_coverage: RosterVicCoverage[]
+  fatigue_flags: RosterFatigueFlag[]
+  hours_warnings: RosterHoursWarning[]
 }
 
 export interface RosterAssignment {
+  shift_id: string
+  shift_name: string
   staff_id: string
-  name: string
-  skill: string
-  score?: number
+  staff_name: string
+  is_vic_active: boolean
+  shift_duration_hours: number
 }
 
-export interface RosterWarning {
+export interface RosterShiftScore {
+  shift_id: string
+  shift_name: string
+  score: number
+  headcount: number
+  skill_ok: boolean
+  unmet_requirements: { skill_name: string; min_count: number; assigned: number }[]
+  vic_ok: boolean
+  gender_pct_female: number
+  languages: string[]
+  seniority_ok: boolean
+}
+
+export interface RosterVicCoverage {
+  client_id: string
+  client_name: string
+  shifts_covered: Record<string, string>   // shift_name -> advisor_name
+  fully_covered: boolean
+}
+
+export interface RosterFatigueFlag {
   staff_id: string
-  staff_name?: string
-  rule_key: string
-  severity: 'warning' | 'hard_block'
-  detail: string
+  staff_name: string
+  shifts: string[]
+  level: string
+  note: string
+  rule_key: RuleKey
+}
+
+export interface RosterHoursWarning {
+  staff_id: string
+  staff_name: string
+  assigned_hours_today: number
+  daily_limit: number
+  weekly_hours_so_far: number
+  weekly_hours_projected: number
+  weekly_cap: number | null
+  type: 'daily' | 'weekly'
+  rule_key: RuleKey
+  severity: RuleSeverity
 }
 
 // ─── VIC ──────────────────────────────────────────────────────────────────────

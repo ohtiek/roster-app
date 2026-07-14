@@ -349,55 +349,142 @@ export function RostersPage({ session }: Props) {
 
 // ── Roster detail component ───────────────────────────────────────────────────
 
+const RULE_LABEL: Record<string, string> = {
+  max_hours_per_day: 'Max hours/day', weekly_hours_cap: 'Weekly hours cap',
+  min_rest_hours: 'Min rest hours', max_consecutive_shifts: 'Max consecutive shifts',
+  certification_expiry: 'Certification expiry', vic_coverage: 'VIC coverage',
+  gender_balance: 'Gender balance', day_of_week_availability: 'Day availability',
+}
+
 function RosterDetail({ payload }: { payload: RosterPayload }) {
-  const warnings = payload.hours_warnings?.length ?? 0
-  const flags = payload.fatigue_flags?.length ?? 0
-  const unmet = payload.shifts?.flatMap(s => s.unmet_requirements ?? []).length ?? 0
+  const hoursWarnings = payload.hours_warnings ?? []
+  const fatigueFlags = payload.fatigue_flags ?? []
+  const shiftScores = payload.shift_scores ?? []
+  const vicCoverage = payload.vic_coverage ?? []
+  const unmet = shiftScores.flatMap(s => s.unmet_requirements ?? []).length
+  const totalFlags = hoursWarnings.length + fatigueFlags.length
+
+  const assignmentsByShift = new Map<string, typeof payload.assignments>()
+  for (const a of payload.assignments ?? []) {
+    if (!assignmentsByShift.has(a.shift_id)) assignmentsByShift.set(a.shift_id, [])
+    assignmentsByShift.get(a.shift_id)!.push(a)
+  }
 
   return (
     <div className={styles.detail}>
       <div className={styles.detailMeta}>
         <span className={styles.metaItem}>Score: <strong>{Math.round(payload.overall_score)}</strong></span>
         {unmet > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{unmet} unmet requirement{unmet !== 1 ? 's' : ''}</span>}
-        {warnings > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{warnings} hours warning{warnings !== 1 ? 's' : ''}</span>}
-        {flags > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{flags} fatigue flag{flags !== 1 ? 's' : ''}</span>}
+        {totalFlags > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{totalFlags} rule flag{totalFlags !== 1 ? 's' : ''}</span>}
         <span className={styles.metaItem} style={{ marginLeft: 'auto', color: 'var(--dash-muted)' }}>
           Generated {new Date(payload.generated_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
 
+      {/* ── Staff mix by shift ── */}
       <div className={styles.shiftGrid}>
-        {(payload.shifts ?? []).map(shift => (
-          <div key={shift.shift_id} className={styles.shiftBlock}>
-            <div className={styles.shiftBlockHeader}>
-              <span className={styles.shiftBlockName}>{shift.shift_name}</span>
-              <span className={styles.shiftBlockTime}>{shift.start_time.slice(0,5)} – {shift.end_time.slice(0,5)}</span>
-              <span className={`${styles.headcount} ${shift.headcount < shift.target_headcount ? styles.warn : ''}`}>
-                {shift.headcount}/{shift.target_headcount}
-              </span>
-            </div>
-            <div className={styles.assignList}>
-              {shift.assigned.length === 0
-                ? <span className={styles.noAssign}>No staff assigned</span>
-                : shift.assigned.map(a => (
-                    <span key={a.staff_id} className={styles.assignChip}>
-                      <span className={styles.assignName}>{a.name}</span>
-                      <span className={styles.assignSkill}>{a.skill}</span>
+        {shiftScores.map(shift => {
+          const assigned = assignmentsByShift.get(shift.shift_id) ?? []
+          const pctFemale = Math.round(shift.gender_pct_female * 100)
+          return (
+            <div key={shift.shift_id} className={styles.shiftBlock}>
+              <div className={styles.shiftBlockHeader}>
+                <span className={styles.shiftBlockName}>{shift.shift_name}</span>
+                <span className={`${styles.headcount} ${shift.headcount < payload.target_headcount_per_shift ? styles.warn : ''}`}>
+                  {shift.headcount}/{payload.target_headcount_per_shift}
+                </span>
+              </div>
+
+              <div className={styles.assignList}>
+                {assigned.length === 0
+                  ? <span className={styles.noAssign}>No staff assigned</span>
+                  : assigned.map(a => (
+                      <span key={a.staff_id} className={styles.assignChip}>
+                        <span className={styles.assignName}>{a.staff_name}</span>
+                        {a.is_vic_active && <span className={styles.vicBadge}>VIC</span>}
+                      </span>
+                    ))}
+              </div>
+
+              {/* Staff mix analysis */}
+              <div className={styles.mixRow}>
+                <span className={`${styles.mixChip} ${shift.skill_ok ? styles.mixOk : styles.mixBad}`}>
+                  Skill {shift.skill_ok ? '✓' : '✗'}
+                </span>
+                <span className={`${styles.mixChip} ${shift.seniority_ok ? styles.mixOk : styles.mixBad}`}>
+                  Senior {shift.seniority_ok ? '✓' : '✗'}
+                </span>
+                {vicCoverage.length > 0 && (
+                  <span className={`${styles.mixChip} ${shift.vic_ok ? styles.mixOk : styles.mixBad}`}>
+                    VIC {shift.vic_ok ? '✓' : '✗'}
+                  </span>
+                )}
+                <span className={styles.mixChip}>{pctFemale}% F / {100 - pctFemale}% M</span>
+              </div>
+              {shift.languages.length > 0 && (
+                <div className={styles.langRow}>Languages: {shift.languages.join(', ')}</div>
+              )}
+
+              {shift.unmet_requirements.length > 0 && (
+                <div className={styles.unmetList}>
+                  {shift.unmet_requirements.map((u, i) => (
+                    <span key={i} className={styles.unmetChip}>
+                      {u.skill_name}: need {u.min_count}, have {u.assigned}
                     </span>
                   ))}
+                </div>
+              )}
             </div>
-            {(shift.unmet_requirements ?? []).length > 0 && (
-              <div className={styles.unmetList}>
-                {shift.unmet_requirements.map((u, i) => (
-                  <span key={i} className={styles.unmetChip}>
-                    {u.skill}: need {u.min_count}, have {u.assigned}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      {/* ── Rule flag analysis ── */}
+      {totalFlags > 0 && (
+        <div className={styles.flagsSection}>
+          <h4 className={styles.flagsTitle}>Rule flags</h4>
+          <div className={styles.flagsList}>
+            {fatigueFlags.map((f, i) => (
+              <div key={`fatigue-${i}`} className={styles.flagRow}>
+                <span className={`${styles.flagSeverity} ${f.level === 'blocked' ? styles.flagHard : styles.flagWarn}`}>
+                  {f.level === 'blocked' ? 'Blocked' : 'Caution'}
+                </span>
+                <span className={styles.flagRule}>{RULE_LABEL[f.rule_key] ?? f.rule_key}</span>
+                <span className={styles.flagStaff}>{f.staff_name}</span>
+                <span className={styles.flagDetail}>{f.note}</span>
+              </div>
+            ))}
+            {hoursWarnings.map((w, i) => (
+              <div key={`hours-${i}`} className={styles.flagRow}>
+                <span className={`${styles.flagSeverity} ${w.severity === 'hard_block' ? styles.flagHard : styles.flagWarn}`}>
+                  {w.severity === 'hard_block' ? 'Blocked' : 'Warning'}
+                </span>
+                <span className={styles.flagRule}>{RULE_LABEL[w.rule_key] ?? w.rule_key}</span>
+                <span className={styles.flagStaff}>{w.staff_name}</span>
+                <span className={styles.flagDetail}>
+                  {w.type === 'daily'
+                    ? `${w.assigned_hours_today}h assigned today (limit ${w.daily_limit}h)`
+                    : `${w.weekly_hours_projected}h projected this week (cap ${w.weekly_cap}h)`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── VIC coverage ── */}
+      {vicCoverage.length > 0 && (
+        <div className={styles.flagsSection}>
+          <h4 className={styles.flagsTitle}>VIC coverage</h4>
+          <div className={styles.vicList}>
+            {vicCoverage.map(vc => (
+              <span key={vc.client_id} className={`${styles.vicChip} ${vc.fully_covered ? styles.vicOk : styles.vicBad}`}>
+                {vc.client_name} — {Object.keys(vc.shifts_covered).length}/{shiftScores.length} shifts
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
