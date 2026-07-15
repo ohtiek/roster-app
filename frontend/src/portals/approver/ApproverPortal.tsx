@@ -6,6 +6,8 @@ import { Modal } from '../../components/ui/Modal'
 import { RosterDetail } from '../admin/pages/RostersPage'
 import type { SessionContext, RosterHistoryRow, RosterPayload, RosterStatus } from '../../lib/types'
 import { supabase } from '../../lib/supabase'
+import { friendlyRosterUpdateError } from '../../lib/rosterErrors'
+import { publishRoster } from '../../lib/rosterActions'
 import styles from './ApproverPortal.module.css'
 
 interface Props { session: SessionContext }
@@ -96,7 +98,7 @@ function RosterTable({ session, statuses, emptyMessage, showActions }: RosterTab
       .from('roster_history').update(patch).eq('id', id).select('id')
 
     setActionSaving(null)
-    if (err) { setActionError(err.message); return }
+    if (err) { setActionError(friendlyRosterUpdateError(err)); return }
     if (!data || data.length === 0) {
       setActionError('Update did not apply — you may not have permission to change this roster.')
       return
@@ -109,6 +111,14 @@ function RosterTable({ session, statuses, emptyMessage, showActions }: RosterTab
     await setStatus(rejectTarget, 'rejected', rejectNote.trim() || undefined)
     setRejectTarget(null); setRejectNote('')
   }, [rejectTarget, rejectNote, setStatus])
+
+  const publish = useCallback(async (id: string) => {
+    setActionSaving(id); setActionError(null)
+    const { error: err } = await publishRoster(id)
+    setActionSaving(null)
+    if (err) { setActionError(err); return }
+    await load()
+  }, [load])
 
   if (!boutiqueId) return <p className={styles.statusMsg}>No boutique selected.</p>
 
@@ -183,7 +193,7 @@ function RosterTable({ session, statuses, emptyMessage, showActions }: RosterTab
                                 {roster.status === 'approved' && (
                                   <>
                                     <Button variant="primary" size="sm" loading={saving}
-                                      onClick={() => setStatus(roster.id, 'published')}>Publish</Button>
+                                      onClick={() => publish(roster.id)}>Publish</Button>
                                     <Button variant="danger" size="sm" loading={saving}
                                       onClick={() => { setRejectTarget(roster.id); setRejectNote('') }}>Reject</Button>
                                   </>
