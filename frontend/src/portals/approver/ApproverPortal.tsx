@@ -6,6 +6,7 @@ import { Modal } from '../../components/ui/Modal'
 import { RosterDetail } from '../admin/pages/RostersPage'
 import type { SessionContext, RosterHistoryRow, RosterPayload, RosterStatus } from '../../lib/types'
 import { supabase } from '../../lib/supabase'
+import { friendlyRosterUpdateError } from '../../lib/rosterErrors'
 import styles from './ApproverPortal.module.css'
 
 interface Props { session: SessionContext }
@@ -96,7 +97,7 @@ function RosterTable({ session, statuses, emptyMessage, showActions }: RosterTab
       .from('roster_history').update(patch).eq('id', id).select('id')
 
     setActionSaving(null)
-    if (err) { setActionError(err.message); return }
+    if (err) { setActionError(friendlyRosterUpdateError(err)); return }
     if (!data || data.length === 0) {
       setActionError('Update did not apply — you may not have permission to change this roster.')
       return

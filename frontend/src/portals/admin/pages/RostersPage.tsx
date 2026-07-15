@@ -8,6 +8,7 @@ import type {
 } from '../../../lib/types'
 import { supabase } from '../../../lib/supabase'
 import { loadShiftOrder, loadScoringRefData, recomputeRoster, type ScoringRefData, type ShiftOrderEntry } from '../../../lib/rosterScoring'
+import { friendlyRosterUpdateError } from '../../../lib/rosterErrors'
 import styles from './RostersPage.module.css'
 
 interface Props { session: SessionContext }
@@ -149,7 +150,7 @@ export function RostersPage({ session }: Props) {
 
     setActionSaving(null)
     if (err) {
-      setActionError(err.message)
+      setActionError(friendlyRosterUpdateError(err))
       return
     }
     if (!data || data.length === 0) {
