@@ -9,6 +9,7 @@ import type {
 import { supabase } from '../../../lib/supabase'
 import { loadShiftOrder, loadScoringRefData, recomputeRoster, type ScoringRefData, type ShiftOrderEntry } from '../../../lib/rosterScoring'
 import { friendlyRosterUpdateError } from '../../../lib/rosterErrors'
+import { publishRoster } from '../../../lib/rosterActions'
 import styles from './RostersPage.module.css'
 
 interface Props { session: SessionContext }
@@ -160,6 +161,14 @@ export function RostersPage({ session }: Props) {
     await load()
   }, [load])
 
+  const publish = useCallback(async (id: string) => {
+    setActionSaving(id); setActionError(null)
+    const { error: err } = await publishRoster(id)
+    setActionSaving(null)
+    if (err) { setActionError(err); return }
+    await load()
+  }, [load])
+
   // ── Filtered list ───────────────────────────────────────────────────────────
 
   const visible = filterStatus === 'all'
@@ -282,7 +291,7 @@ export function RostersPage({ session }: Props) {
                               )}
                               {roster.status === 'approved' && canApprove && (
                                 <Button variant="primary" size="sm" loading={saving}
-                                  onClick={() => setStatus(roster.id, 'published')}>Publish</Button>
+                                  onClick={() => publish(roster.id)}>Publish</Button>
                               )}
                             </div>
                           </td>
