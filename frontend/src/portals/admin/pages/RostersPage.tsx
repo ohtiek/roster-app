@@ -42,6 +42,11 @@ type FilterStatus = 'all' | RosterStatus
 
 export function RostersPage({ session }: Props) {
   const boutiqueId = session.activeBoutiqueId
+  // Matches roster_update_approver's RLS grant exactly: only the 'approver'
+  // role at this boutique can approve/reject/publish. regional_admin is
+  // intentionally excluded — it's read-only oversight by design and has no
+  // UPDATE policy on roster_history at all.
+  const canApprove = session.boutiqueRoles.some(r => r.boutique_id === boutiqueId && r.role === 'approver')
 
   const [rosters, setRosters] = useState<RosterHistoryRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,7 +77,7 @@ export function RostersPage({ session }: Props) {
 
     const { data, error: err } = await supabase
       .from('roster_history')
-      .select('id, roster_date, status, overall_score, override_count, submit_deadline, approve_deadline, created_at')
+      .select('id, roster_date, status, overall_score, override_count, submit_deadline, approve_deadline, submitted_at, created_at')
       .eq('boutique_id', boutiqueId)
       .order('roster_date', { ascending: false })
       .limit(60)
@@ -266,7 +271,7 @@ export function RostersPage({ session }: Props) {
                                   Withdraw
                                 </Button>
                               )}
-                              {roster.status === 'submitted' && session.isRegionalAdmin && (
+                              {roster.status === 'submitted' && canApprove && (
                                 <>
                                   <Button variant="primary" size="sm" loading={saving}
                                     onClick={() => setStatus(roster.id, 'approved')}>Approve</Button>
@@ -274,7 +279,7 @@ export function RostersPage({ session }: Props) {
                                     onClick={() => setStatus(roster.id, 'rejected')}>Reject</Button>
                                 </>
                               )}
-                              {roster.status === 'approved' && session.isRegionalAdmin && (
+                              {roster.status === 'approved' && canApprove && (
                                 <Button variant="primary" size="sm" loading={saving}
                                   onClick={() => setStatus(roster.id, 'published')}>Publish</Button>
                               )}
@@ -366,7 +371,7 @@ const RULE_LABEL: Record<string, string> = {
   gender_balance: 'Gender balance', day_of_week_availability: 'Day availability',
 }
 
-interface RosterDetailProps {
+export interface RosterDetailProps {
   payload: RosterPayload
   rosterId: string
   boutiqueId: string
@@ -374,7 +379,7 @@ interface RosterDetailProps {
   onSaved: () => void
 }
 
-function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: RosterDetailProps) {
+export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: RosterDetailProps) {
   const hoursWarnings = payload.hours_warnings ?? []
   const fatigueFlags = payload.fatigue_flags ?? []
 

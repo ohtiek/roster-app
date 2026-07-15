@@ -203,6 +203,7 @@ export interface RosterHistoryRow {
   override_count: number
   submit_deadline: string | null
   approve_deadline: string | null
+  submitted_at: string | null
   created_at: string
 }
 
