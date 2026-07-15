@@ -42,6 +42,11 @@ type FilterStatus = 'all' | RosterStatus
 
 export function RostersPage({ session }: Props) {
   const boutiqueId = session.activeBoutiqueId
+  // Matches roster_update_approver's RLS grant exactly: only the 'approver'
+  // role at this boutique can approve/reject/publish. regional_admin is
+  // intentionally excluded — it's read-only oversight by design and has no
+  // UPDATE policy on roster_history at all.
+  const canApprove = session.boutiqueRoles.some(r => r.boutique_id === boutiqueId && r.role === 'approver')
 
   const [rosters, setRosters] = useState<RosterHistoryRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -266,7 +271,7 @@ export function RostersPage({ session }: Props) {
                                   Withdraw
                                 </Button>
                               )}
-                              {roster.status === 'submitted' && session.isRegionalAdmin && (
+                              {roster.status === 'submitted' && canApprove && (
                                 <>
                                   <Button variant="primary" size="sm" loading={saving}
                                     onClick={() => setStatus(roster.id, 'approved')}>Approve</Button>
@@ -274,7 +279,7 @@ export function RostersPage({ session }: Props) {
                                     onClick={() => setStatus(roster.id, 'rejected')}>Reject</Button>
                                 </>
                               )}
-                              {roster.status === 'approved' && session.isRegionalAdmin && (
+                              {roster.status === 'approved' && canApprove && (
                                 <Button variant="primary" size="sm" loading={saving}
                                   onClick={() => setStatus(roster.id, 'published')}>Publish</Button>
                               )}
