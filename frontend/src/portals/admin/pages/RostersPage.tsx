@@ -77,7 +77,7 @@ export function RostersPage({ session }: Props) {
 
     const { data, error: err } = await supabase
       .from('roster_history')
-      .select('id, roster_date, status, overall_score, override_count, submit_deadline, approve_deadline, created_at')
+      .select('id, roster_date, status, overall_score, override_count, submit_deadline, approve_deadline, submitted_at, created_at')
       .eq('boutique_id', boutiqueId)
       .order('roster_date', { ascending: false })
       .limit(60)
@@ -371,7 +371,7 @@ const RULE_LABEL: Record<string, string> = {
   gender_balance: 'Gender balance', day_of_week_availability: 'Day availability',
 }
 
-interface RosterDetailProps {
+export interface RosterDetailProps {
   payload: RosterPayload
   rosterId: string
   boutiqueId: string
@@ -379,7 +379,7 @@ interface RosterDetailProps {
   onSaved: () => void
 }
 
-function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: RosterDetailProps) {
+export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: RosterDetailProps) {
   const hoursWarnings = payload.hours_warnings ?? []
   const fatigueFlags = payload.fatigue_flags ?? []
 
