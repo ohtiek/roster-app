@@ -505,13 +505,11 @@ function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: Roste
     <div className={styles.detail}>
       <div className={styles.detailMeta}>
         <span className={styles.metaItem}>Score: <strong>{Math.round(overallScoreState)}</strong></span>
-        {unmet > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{unmet} unmet requirement{unmet !== 1 ? 's' : ''}</span>}
-        {totalFlags > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{totalFlags} rule flag{totalFlags !== 1 ? 's' : ''}</span>}
         {canEdit && (
           <span className={styles.editActions}>
             {!editing ? (
-              <Button variant="ghost" size="sm" loading={refLoading} onClick={startEditing}>
-                Edit assignments
+              <Button variant="secondary" size="sm" loading={refLoading} onClick={startEditing}>
+                &#x270E; Edit assignments
               </Button>
             ) : (
               <>
@@ -521,6 +519,8 @@ function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: Roste
             )}
           </span>
         )}
+        {unmet > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{unmet} unmet requirement{unmet !== 1 ? 's' : ''}</span>}
+        {totalFlags > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{totalFlags} rule flag{totalFlags !== 1 ? 's' : ''}</span>}
         <span className={styles.metaItem} style={{ marginLeft: 'auto', color: 'var(--dash-muted)' }}>
           Generated {new Date(payload.generated_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
         </span>
