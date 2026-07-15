@@ -2,8 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '../../../components/layout/PageHeader'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
-import type { SessionContext, RosterHistoryRow, RosterPayload, RosterStatus } from '../../../lib/types'
+import type {
+  SessionContext, RosterHistoryRow, RosterPayload, RosterStatus,
+  RosterAssignment, RosterShiftScore, RosterVicCoverage,
+} from '../../../lib/types'
 import { supabase } from '../../../lib/supabase'
+import { loadShiftOrder, loadScoringRefData, recomputeRoster, type ScoringRefData, type ShiftOrderEntry } from '../../../lib/rosterScoring'
 import styles from './RostersPage.module.css'
 
 interface Props { session: SessionContext }
@@ -288,7 +292,13 @@ export function RostersPage({ session }: Props) {
                                   <p className={styles.loadingSmall}>No roster data stored.</p>
                                 )}
                                 {!payloadLoading && expandedPayload && (
-                                  <RosterDetail payload={expandedPayload} />
+                                  <RosterDetail
+                                    payload={expandedPayload}
+                                    rosterId={roster.id}
+                                    boutiqueId={boutiqueId}
+                                    canEdit={roster.status === 'draft'}
+                                    onSaved={load}
+                                  />
                                 )}
                               </div>
                             </td>
@@ -356,30 +366,173 @@ const RULE_LABEL: Record<string, string> = {
   gender_balance: 'Gender balance', day_of_week_availability: 'Day availability',
 }
 
-function RosterDetail({ payload }: { payload: RosterPayload }) {
+interface RosterDetailProps {
+  payload: RosterPayload
+  rosterId: string
+  boutiqueId: string
+  canEdit: boolean
+  onSaved: () => void
+}
+
+function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }: RosterDetailProps) {
   const hoursWarnings = payload.hours_warnings ?? []
   const fatigueFlags = payload.fatigue_flags ?? []
-  const shiftScores = payload.shift_scores ?? []
-  const vicCoverage = payload.vic_coverage ?? []
+
+  // ── Editable working copy ────────────────────────────────────────────────
+  const [editing, setEditing] = useState(false)
+  const [assignments, setAssignments] = useState<RosterAssignment[]>(payload.assignments ?? [])
+  const [shiftScores, setShiftScores] = useState<RosterShiftScore[]>(payload.shift_scores ?? [])
+  const [overallScoreState, setOverallScoreState] = useState(payload.overall_score)
+  const [vicCoverage, setVicCoverage] = useState<RosterVicCoverage[]>(payload.vic_coverage ?? [])
+
+  const [refData, setRefData] = useState<ScoringRefData | null>(null)
+  const [shiftOrder, setShiftOrder] = useState<ShiftOrderEntry[]>([])
+  const [refLoading, setRefLoading] = useState(false)
+  const [refError, setRefError] = useState<string | null>(null)
+
+  const [addingToShift, setAddingToShift] = useState<string | null>(null)
+  const [addSelection, setAddSelection] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   const unmet = shiftScores.flatMap(s => s.unmet_requirements ?? []).length
   const totalFlags = hoursWarnings.length + fatigueFlags.length
 
-  const assignmentsByShift = new Map<string, typeof payload.assignments>()
-  for (const a of payload.assignments ?? []) {
+  const assignmentsByShift = new Map<string, RosterAssignment[]>()
+  for (const a of assignments) {
     if (!assignmentsByShift.has(a.shift_id)) assignmentsByShift.set(a.shift_id, [])
     assignmentsByShift.get(a.shift_id)!.push(a)
+  }
+
+  async function startEditing() {
+    if (refData) { setEditing(true); return }
+    setRefLoading(true); setRefError(null)
+    try {
+      const shiftIds = (payload.shift_scores ?? []).map(s => s.shift_id)
+      const [order, ref] = await Promise.all([
+        loadShiftOrder(shiftIds),
+        loadScoringRefData(boutiqueId, shiftIds),
+      ])
+      setShiftOrder(order)
+      setRefData(ref)
+      setEditing(true)
+    } catch (e) {
+      setRefError(e instanceof Error ? e.message : 'Failed to load staff reference data')
+    }
+    setRefLoading(false)
+  }
+
+  function applyAssignments(next: RosterAssignment[]) {
+    setAssignments(next)
+    if (!refData || !shiftOrder.length) return
+    const result = recomputeRoster(next, shiftOrder, refData)
+    setShiftScores(result.shiftScores)
+    setOverallScoreState(result.overallScore)
+    setVicCoverage(result.vicCoverage)
+  }
+
+  function addStaff(shiftId: string) {
+    if (!addSelection || !refData) return
+    const staff = refData.staffById.get(addSelection)
+    const shift = shiftOrder.find(s => s.shift_id === shiftId)
+    if (!staff || !shift) return
+    applyAssignments([...assignments, {
+      shift_id: shiftId,
+      shift_name: shift.shift_name,
+      staff_id: staff.id,
+      staff_name: staff.name,
+      is_vic_active: refData.vicClients.some(vc => vc.advisor_staff_ids.includes(staff.id)),
+      shift_duration_hours: shift.duration_hours,
+    }])
+    setAddingToShift(null); setAddSelection('')
+  }
+
+  function removeStaff(shiftId: string, staffId: string) {
+    applyAssignments(assignments.filter(a => !(a.shift_id === shiftId && a.staff_id === staffId)))
+  }
+
+  function cancelEditing() {
+    setAssignments(payload.assignments ?? [])
+    setShiftScores(payload.shift_scores ?? [])
+    setOverallScoreState(payload.overall_score)
+    setVicCoverage(payload.vic_coverage ?? [])
+    setEditing(false); setSaveError(null)
+  }
+
+  async function saveEdits() {
+    setSaving(true); setSaveError(null)
+
+    const { data: existing } = await supabase
+      .from('roster_history').select('override_ids').eq('id', rosterId).single()
+
+    const originalStaffIds = new Set((payload.assignments ?? []).map(a => a.staff_id))
+    const currentStaffIds = new Set(assignments.map(a => a.staff_id))
+    const touched = new Set<string>()
+    for (const id of originalStaffIds) if (!currentStaffIds.has(id)) touched.add(id)
+    for (const id of currentStaffIds) if (!originalStaffIds.has(id)) touched.add(id)
+    const overrideIds = Array.from(new Set([...(existing?.override_ids ?? []), ...touched]))
+
+    const newPayload: RosterPayload = {
+      ...payload,
+      assignments,
+      shift_scores: shiftScores,
+      overall_score: overallScoreState,
+      vic_coverage: vicCoverage,
+    }
+
+    const { data, error: err } = await supabase
+      .from('roster_history')
+      .update({
+        payload: newPayload,
+        overall_score: overallScoreState,
+        override_count: overrideIds.length,
+        override_ids: overrideIds,
+      })
+      .eq('id', rosterId)
+      .select('id')
+
+    setSaving(false)
+    if (err) { setSaveError(err.message); return }
+    if (!data || data.length === 0) {
+      setSaveError('Save did not apply — you may not have permission to change this roster.')
+      return
+    }
+    setEditing(false)
+    onSaved()
   }
 
   return (
     <div className={styles.detail}>
       <div className={styles.detailMeta}>
-        <span className={styles.metaItem}>Score: <strong>{Math.round(payload.overall_score)}</strong></span>
+        <span className={styles.metaItem}>Score: <strong>{Math.round(overallScoreState)}</strong></span>
         {unmet > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{unmet} unmet requirement{unmet !== 1 ? 's' : ''}</span>}
         {totalFlags > 0 && <span className={`${styles.metaItem} ${styles.warn}`}>{totalFlags} rule flag{totalFlags !== 1 ? 's' : ''}</span>}
+        {canEdit && (
+          <span className={styles.editActions}>
+            {!editing ? (
+              <Button variant="ghost" size="sm" loading={refLoading} onClick={startEditing}>
+                Edit assignments
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={cancelEditing}>Cancel</Button>
+                <Button variant="primary" size="sm" loading={saving} onClick={saveEdits}>Save changes</Button>
+              </>
+            )}
+          </span>
+        )}
         <span className={styles.metaItem} style={{ marginLeft: 'auto', color: 'var(--dash-muted)' }}>
           Generated {new Date(payload.generated_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
+      {refError && <p className={styles.errorMsg} style={{ padding: 0 }}>{refError}</p>}
+      {saveError && <p className={styles.errorMsg} style={{ padding: 0 }}>{saveError}</p>}
+      {editing && (
+        <p className={styles.editHint}>
+          Editing assignments recalculates the score live. Fatigue/hours-limit flags below still reflect the last
+          full generation — regenerate to re-check them against your changes.
+        </p>
+      )}
 
       {/* ── Staff mix by shift ── */}
       <div className={styles.shiftGrid}>
@@ -404,9 +557,43 @@ function RosterDetail({ payload }: { payload: RosterPayload }) {
                       <span key={a.staff_id} className={styles.assignChip}>
                         <span className={styles.assignName}>{a.staff_name}</span>
                         {a.is_vic_active && <span className={styles.vicBadge}>VIC</span>}
+                        {editing && (
+                          <button
+                            className={styles.removeStaffBtn}
+                            onClick={() => removeStaff(shift.shift_id, a.staff_id)}
+                            aria-label={`Remove ${a.staff_name}`}
+                          >
+                            &#x2715;
+                          </button>
+                        )}
                       </span>
                     ))}
               </div>
+
+              {editing && refData && (
+                addingToShift === shift.shift_id ? (
+                  <div className={styles.addStaffRow}>
+                    <select
+                      className={styles.addStaffSelect}
+                      value={addSelection}
+                      onChange={e => setAddSelection(e.target.value)}
+                    >
+                      <option value="">— select staff —</option>
+                      {refData.allStaff
+                        .filter(s => !assigned.some(a => a.staff_id === s.id))
+                        .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    <Button variant="primary" size="sm" disabled={!addSelection}
+                      onClick={() => addStaff(shift.shift_id)}>Add</Button>
+                    <Button variant="ghost" size="sm"
+                      onClick={() => { setAddingToShift(null); setAddSelection('') }}>Cancel</Button>
+                  </div>
+                ) : (
+                  <button className={styles.addStaffTrigger} onClick={() => setAddingToShift(shift.shift_id)}>
+                    + Add staff
+                  </button>
+                )
+              )}
 
               {/* Staff mix analysis */}
               <div className={styles.mixRow}>
