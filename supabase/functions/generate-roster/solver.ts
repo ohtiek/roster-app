@@ -4,6 +4,8 @@
  * and per-boutique rule config (enable/disable, hard_block vs warning).
  */
 
+import { scoreShiftStaff, overallScore, type ScoringStaff } from '../_shared/scoring.ts'
+
 export interface SolverShift {
   id: string
   name: string
@@ -389,13 +391,7 @@ export function solve(input: SolverInput): SolverResult {
   }
 
   // ── Overall score ─────────────────────────────────────────────────────────
-  const totalAssigned = assignments.length
-  const overall = totalAssigned > 0
-    ? shift_scores.reduce((sum, ss) => {
-        const count = assignments.filter(a => a.shift_id === ss.shift_id).length
-        return sum + ss.score * count
-      }, 0) / totalAssigned
-    : 0
+  const headcountByShift = new Map(shift_scores.map(ss => [ss.shift_id, ss.headcount]))
 
   return {
     assignments,
@@ -403,7 +399,7 @@ export function solve(input: SolverInput): SolverResult {
     vic_coverage,
     fatigue_flags,
     hours_warnings,
-    overall_score: Math.round(overall * 10) / 10,
+    overall_score: overallScore(shift_scores, headcountByShift),
     solver_used: 'greedy-db',
     target_headcount_per_shift: config.target_headcount_per_shift,
   }
@@ -416,79 +412,23 @@ function scoreShift(
   weights: SolverConfig['weights'],
   rules: RuleConfigMap,
 ): SolverResult['shift_scores'][number] {
-  if (!assigned.length) {
-    return {
-      shift_id: shift.id, shift_name: shift.name,
-      score: 0, headcount: 0, skill_ok: false,
-      unmet_requirements: shift.requirements.map(r => ({
-        skill_name: r.skill_name, min_count: r.min_count, assigned: 0,
-      })),
-      vic_ok: false,
-      gender_pct_female: 0, languages: [], seniority_ok: false,
-    }
-  }
+  const scoringStaff: ScoringStaff[] = assigned.map(s => ({
+    id: s.id,
+    name: s.name,
+    gender: s.gender,
+    languages: s.languages,
+    primary_skill_type_id: s.skills.find(sk => sk.is_primary)?.skill_type_id ?? null,
+    is_senior_equivalent: s.skills.some(sk => sk.is_senior_equivalent),
+  }))
 
-  // 1. Skill coverage
-  const skillCounts = new Map<string, number>()
-  for (const s of assigned) {
-    const primary = s.skills.find(sk => sk.is_primary)
-    if (primary) skillCounts.set(primary.skill_type_id, (skillCounts.get(primary.skill_type_id) ?? 0) + 1)
-  }
-  const skillOk = shift.requirements.every(r => (skillCounts.get(r.skill_type_id) ?? 0) >= r.min_count)
-  const skillScore = skillOk ? 1 : shift.requirements.reduce((a, r) => {
-    return a + Math.min((skillCounts.get(r.skill_type_id) ?? 0) / r.min_count, 1)
-  }, 0) / Math.max(shift.requirements.length, 1)
-  const unmetRequirements = shift.requirements
-    .filter(r => (skillCounts.get(r.skill_type_id) ?? 0) < r.min_count)
-    .map(r => ({
-      skill_name: r.skill_name, min_count: r.min_count,
-      assigned: skillCounts.get(r.skill_type_id) ?? 0,
-    }))
+  const result = scoreShiftStaff(
+    shift.requirements,
+    scoringStaff,
+    vicClients,
+    weights,
+    isActive(rules, 'vic_coverage'),
+    isActive(rules, 'gender_balance'),
+  )
 
-  // 2. VIC affiliation
-  const assignedIds = new Set(assigned.map(s => s.id))
-  const vicCovered = vicClients.filter(v => v.advisor_staff_ids.some(id => assignedIds.has(id))).length
-  const vicEffectiveWeight = isActive(rules, 'vic_coverage') ? weights.vic_affiliation : 0
-  const vicScore = vicClients.length === 0 ? 1 : vicCovered / vicClients.length
-  const vicOk = vicCovered === vicClients.length
-
-  // 3. Gender balance
-  const pctF = assigned.filter(s => s.gender === 'F').length / assigned.length
-  const genderEffectiveWeight = isActive(rules, 'gender_balance') ? weights.gender_balance : 0
-  const genderScore = pctF >= 0.3 && pctF <= 0.7 ? 1 : 0.5
-
-  // 4. Seniority
-  const hasSenior = assigned.some(s => s.skills.some(sk => sk.is_senior_equivalent))
-  const seniorityScore = hasSenior ? 1 : 0
-
-  // 5. Language coverage
-  const langs = new Set(assigned.flatMap(s => s.languages))
-  const langScore = Math.min(langs.size / 5, 1)
-
-  // Redistribute dropped weights so total stays at 100
-  const droppedWeight = (weights.vic_affiliation - vicEffectiveWeight) + (weights.gender_balance - genderEffectiveWeight)
-  const remainingBase = 1 - droppedWeight
-
-  const score = remainingBase > 0
-    ? (
-        weights.skill_coverage    * skillScore +
-        vicEffectiveWeight        * vicScore +
-        genderEffectiveWeight     * genderScore +
-        weights.seniority         * seniorityScore +
-        weights.language_coverage * langScore
-      ) / remainingBase * 100
-    : 0
-
-  return {
-    shift_id: shift.id,
-    shift_name: shift.name,
-    score: Math.round(score * 10) / 10,
-    headcount: assigned.length,
-    skill_ok: skillOk,
-    unmet_requirements: unmetRequirements,
-    vic_ok: vicOk,
-    gender_pct_female: Math.round(pctF * 100) / 100,
-    languages: [...langs].sort(),
-    seniority_ok: hasSenior,
-  }
+  return { shift_id: shift.id, shift_name: shift.name, ...result }
 }

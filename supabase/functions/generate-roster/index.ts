@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { solve, type SolverStaff, type RuleConfigMap } from './solver.ts'
+import { overallScore as computeOverallScore } from '../_shared/scoring.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -444,18 +445,11 @@ function mergeShiftIntoPayload(
 
   const allAssignments = [...otherAssignments, ...newAssignments]
   const allScores = [...otherScores, ...newScores]
-
-  const totalStaff = allAssignments.length
-  const overallScore = totalStaff > 0
-    ? allScores.reduce((sum, ss) => {
-        const count = allAssignments.filter((a: any) => a.shift_id === ss.shift_id).length
-        return sum + ss.score * count
-      }, 0) / totalStaff
-    : 0
+  const headcountByShift = new Map(allScores.map((ss: any) => [ss.shift_id, ss.headcount ?? 0]))
 
   return {
     ...(existing ?? {}),
-    overall_score: Math.round(overallScore * 10) / 10,
+    overall_score: computeOverallScore(allScores, headcountByShift),
     assignments: allAssignments,
     shift_scores: allScores,
     vic_coverage: result.vic_coverage.length ? result.vic_coverage : (existing?.vic_coverage ?? []),

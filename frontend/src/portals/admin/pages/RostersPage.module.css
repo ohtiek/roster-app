@@ -168,6 +168,15 @@
 .metaItem strong { color: var(--dash-accent); }
 .metaItem.warn { color: #c47d10; font-weight: 500; }
 
+.editActions { display: flex; gap: 0.5rem; }
+
+.editHint {
+  font-size: 12.5px; color: var(--dash-muted); line-height: 1.5;
+  margin: 0; padding: 0.5rem 0.75rem;
+  background: rgba(184,151,58,0.08);
+  border-radius: 6px;
+}
+
 .shiftGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -213,6 +222,33 @@
   background: rgba(184,151,58,0.15); color: var(--dash-accent);
   border-radius: 3px; padding: 1px 5px;
 }
+
+.removeStaffBtn {
+  margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  color: var(--dash-muted); font-size: 13px; line-height: 1;
+  padding: 1px 4px; border-radius: 3px;
+  transition: color 0.1s, background 0.1s;
+}
+.removeStaffBtn:hover { color: #dc2626; background: rgba(220,38,38,0.08); }
+
+.addStaffRow {
+  display: flex; align-items: center; gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.addStaffSelect {
+  font-size: 12px; flex: 1; min-width: 0;
+  border: 1px solid var(--dash-border); border-radius: 4px;
+  background: var(--dash-surface); color: var(--dash-text);
+  padding: 3px 6px;
+}
+.addStaffTrigger {
+  font-size: 12px; font-weight: 500;
+  color: var(--dash-accent);
+  background: none; border: none; cursor: pointer;
+  padding: 0.4rem 0 0; margin-top: 0.2rem;
+}
+.addStaffTrigger:hover { text-decoration: underline; }
 
 .unmetList { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.5rem; }
 
