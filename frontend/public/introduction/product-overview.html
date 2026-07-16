@@ -67,6 +67,43 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
 .portal-card p{font-size:12.5px;line-height:1.6}
 .portal-card .who{font-size:11px;color:var(--gold);font-weight:600;margin-top:10px}
 
+/* ── Workflow diagram ── */
+.flow-section{background:white}
+.flow-section h2{font-size:clamp(22px,2.8vw,30px);margin-bottom:8px}
+.flow-section .lede{max-width:640px;margin-bottom:8px}
+.flow{max-width:700px;margin:44px auto 0}
+.flow-item{display:flex;gap:22px;position:relative;padding-bottom:34px}
+.flow-item:last-child{padding-bottom:0}
+.flow-item:not(:last-child)::after{content:'';position:absolute;left:19px;top:44px;bottom:-8px;width:1.5px;background:rgba(201,168,76,.4)}
+.flow-num{flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--navy);color:var(--gold-lt);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:16px;z-index:1}
+.flow-body{flex:1;padding-top:3px}
+.flow-role{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
+.flow-body h4{font-size:16px;font-weight:600;color:var(--navy);font-family:var(--sans);margin-bottom:5px}
+.flow-body p{font-size:13px}
+.flow-branch{margin-top:12px;display:flex;gap:10px}
+.flow-outcome{flex:1;border-radius:6px;padding:11px 14px;font-size:12px;line-height:1.55}
+.flow-outcome.ok{background:#EAF3DE;color:#27500A;border-left:2.5px solid #6FA83A}
+.flow-outcome.no{background:#FCEBEB;color:#791F1F;border-left:2.5px solid #E24B4A}
+.flow-outcome strong{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+@media(max-width:560px){.flow-branch{flex-direction:column}}
+
+/* ── Scenario ── */
+.scenario{background:var(--warm)}
+.scenario h2{font-size:clamp(22px,2.8vw,30px);margin-bottom:8px}
+.scenario .lede{max-width:660px;margin-bottom:32px}
+.scenario-frames{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.scenario-frame{background:white;border-radius:10px;border:0.5px solid var(--line);padding:18px 16px 16px;position:relative}
+.scenario-frame .fnum{position:absolute;top:-13px;left:16px;width:27px;height:27px;border-radius:50%;background:var(--navy);color:var(--gold-lt);font-family:var(--serif);font-size:13px;display:flex;align-items:center;justify-content:center}
+.scenario-frame .ftime{font-size:10.5px;color:var(--gold);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:6px 0 10px}
+.scenario-frame .shot-frame{margin-bottom:10px}
+.scenario-frame h4{font-size:13.5px;color:var(--navy);font-weight:600;margin-bottom:5px}
+.scenario-frame p{font-size:12px;line-height:1.55}
+.scenario-takeaway{margin-top:28px;background:var(--navy-deep);border-radius:8px;padding:20px 24px;display:flex;align-items:flex-start;gap:16px}
+.scenario-takeaway .mk{font-family:var(--serif);color:var(--gold);font-size:22px;flex-shrink:0;line-height:1}
+.scenario-takeaway p{color:rgba(247,245,239,.75);font-size:13px;margin:0}
+.scenario-takeaway strong{color:white}
+@media(max-width:820px){.scenario-frames{grid-template-columns:1fr}}
+
 /* ── Feature sections (screenshot + copy) ── */
 .feature{background:white}
 .feature + .feature{border-top:1px solid var(--line)}
@@ -135,7 +172,7 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
     <div class="stats">
       <div class="hstat"><div class="n">4</div><div class="l">Role-based portals</div></div>
       <div class="hstat"><div class="n">8</div><div class="l">Configurable rules</div></div>
-      <div class="hstat"><div class="n">2+</div><div class="l">Boutiques supported today</div></div>
+      <div class="hstat"><div class="n">2</div><div class="l">Boutiques in the current dataset</div></div>
     </div>
   </div>
 </section>
@@ -147,14 +184,14 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
     <h2>A scheduling system built around who actually touches it.</h2>
     <div class="exec-grid" style="margin-top:28px">
       <div class="exec-copy">
-        <p>The roster platform has grown from a single admin screen into a <strong>role-based operating system for store scheduling</strong>: an Admin portal for building and configuring rosters, an Approver portal for the sign-off step, a Staff portal so floor employees can check their own shifts, and a Reader portal for shared, view-only displays.</p>
-        <p>Every roster is generated against a boutique's own staff, VIC clients, shift definitions and constraint rules, scored automatically, and carried through a <strong>draft → submitted → approved → published</strong> lifecycle with a full audit trail. Managers can override any auto-generated assignment and see the score recalculate live before it ever reaches an approver.</p>
-        <p>The data model already supports <strong>multiple boutiques under one deployment</strong> — staff, VIC clients, shift rules and scoring weights are all configured per boutique, and a regional admin can switch between them from a single login. That means the cost of adding a second, third, or tenth store is incremental configuration, not a new build.</p>
+        <p>The platform has been rebuilt from a single admin screen into <strong>three working, role-scoped portals</strong> — Admin, Approver and Staff — plus a fourth (Reader, a read-only published-roster browser) reserved for a later phase. Each user signs in once and lands directly in the portal that matches their access, rather than one shared screen with everything visible to everyone.</p>
+        <p>Every roster moves through the same tracked lifecycle: <strong>draft → submitted → approved → published</strong> (with reject and amend paths), generated automatically from a boutique's staff, VIC appointments, leave records and shift rules, and scored out of 100 by a single scoring module shared by both the automatic generator and manual edits — so a hand adjustment and a fresh generation are always judged the same way.</p>
+        <p>Staff, VIC clients, shifts, rules and scoring weights are all stored per boutique in one data model, and a regional admin already switches between boutiques from a single login. The current dataset has two boutiques configured (Sydney and Melbourne); adding another is a matter of entering that boutique's own staff and rules into the existing schema, not building new screens.</p>
       </div>
       <div class="exec-cards">
-        <div class="exec-card"><div class="k">Who it's for</div><div class="v">Store operations admins, regional/floor managers who approve, individual staff checking shifts, and shared front-of-house displays.</div></div>
-        <div class="exec-card"><div class="k">What changed recently</div><div class="v">Rebuilt from one admin panel into four dedicated portals, added a full approval workflow, manual roster editing with live re-scoring, leave management, and per-boutique rule configuration.</div></div>
-        <div class="exec-card"><div class="k">Why it matters for budget</div><div class="v">One codebase, one data model, no per-store re-implementation — the marginal cost of scaling to more boutiques is configuration and data entry, not engineering.</div></div>
+        <div class="exec-card"><div class="k">Who it's for</div><div class="v">Store or regional operations admins, the manager who signs off each roster, and every floor employee checking their own shifts.</div></div>
+        <div class="exec-card"><div class="k">What changed recently</div><div class="v">Split into four dedicated portals with real sign-in; added the submit → approve → publish workflow, manual roster editing with live re-scoring, leave tracking, and per-boutique rule configuration.</div></div>
+        <div class="exec-card"><div class="k">Why it matters for budget</div><div class="v">One codebase and one data model serve every boutique — scaling to another store is configuration and data entry inside the existing schema, not a new build.</div></div>
       </div>
     </div>
   </div>
@@ -190,6 +227,69 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
         <h3>Published view <span style="opacity:.5;font-weight:400">(planned)</span></h3>
         <p>A read-only, PDF/CSV-exportable roster browser for a shared back-of-house screen or printout.</p>
         <div class="who">Shared / front-of-house</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Workflow diagram ── -->
+<section class="section flow-section section-line">
+  <div class="wrap">
+    <div class="eyebrow">The roster lifecycle</div>
+    <h2>From a blank date to a shift someone sees on their phone.</h2>
+    <p class="lede">Every roster — whether machine-generated or hand-built — moves through the same six steps, with a permanent record at each one.</p>
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <div class="flow-role">Admin · Rosters</div>
+          <h4>Generate a draft</h4>
+          <p>Pick a date. The engine reads that boutique's staff, skills, VIC appointments, leave and shift rules and proposes a scored roster.</p>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <div class="flow-role">Admin · Rosters</div>
+          <h4>Review &amp; adjust</h4>
+          <p>Unmet requirements and rule flags are called out per shift. Add or remove staff by hand — the score recalculates live, before anything is sent onward.</p>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <div class="flow-role">Admin → Approver</div>
+          <h4>Submit for approval</h4>
+          <p>The draft leaves the admin's queue and appears in the approver's Approval Inbox, with its score and any overrides visible.</p>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">4</div>
+        <div class="flow-body">
+          <div class="flow-role">Approver · Inbox</div>
+          <h4>Approve or reject</h4>
+          <p>The approver — a separate role from whoever built the draft — checks it against the same detail view and decides.</p>
+          <div class="flow-branch">
+            <div class="flow-outcome ok"><strong>Approved</strong>Moves on to publish.</div>
+            <div class="flow-outcome no"><strong>Rejected</strong>Returns to Draft with a note attached, back to step 2 — no dead end.</div>
+          </div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">5</div>
+        <div class="flow-body">
+          <div class="flow-role">Approver · Inbox</div>
+          <h4>Publish</h4>
+          <p>If another roster is already published for that boutique and date, it's automatically marked Amended and superseded — not overwritten, not left to error out.</p>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">6</div>
+        <div class="flow-body">
+          <div class="flow-role">Staff · My Schedule</div>
+          <h4>Live for staff</h4>
+          <p>Every linked staff member on that roster sees the shift on their own My Schedule the moment it's published — no announcement needed.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -374,6 +474,42 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
         <li>No admin or approver access required, just a linked staff record</li>
         <li>Leave requests and a team view are scoped for a later phase</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── Scenario: ad-hoc availability change ── -->
+<section class="section scenario section-line">
+  <div class="wrap">
+    <div class="eyebrow">Business agility, in practice</div>
+    <h2>A staff member calls in sick — the morning of a published shift.</h2>
+    <p class="lede">A real run-through, captured from the app: a rostered stylist becomes unavailable after her shift is already live, and the correction goes out through the normal review path in minutes, not a scramble.</p>
+    <div class="scenario-frames">
+      <div class="scenario-frame">
+        <div class="fnum">1</div>
+        <div class="shot-frame"><img src="assets/overview/scenario-leave-added.png" alt="Leave page showing a new ad-hoc sick leave record just added for a staff member, for today"></div>
+        <div class="ftime">Log the leave</div>
+        <h4>Admin · Leave</h4>
+        <p>The admin adds an ad-hoc sick-leave record for today, on the spot — no spreadsheet, no group chat, and it's timestamped and attributed like every other leave record.</p>
+      </div>
+      <div class="scenario-frame">
+        <div class="fnum">2</div>
+        <div class="shot-frame"><img src="assets/overview/scenario-new-draft.png" alt="A freshly generated draft roster for the same date, automatically excluding the staff member on leave and filling the gap from the bench"></div>
+        <div class="ftime">Regenerate</div>
+        <h4>Admin · Rosters</h4>
+        <p>Re-running Generate for the same date automatically excludes her — the engine already treats today's leave as unavailability — and fills the shift from the bench without anyone hunting for a replacement.</p>
+      </div>
+      <div class="scenario-frame">
+        <div class="fnum">3</div>
+        <div class="shot-frame"><img src="assets/overview/scenario-history-superseded.png" alt="Approval History showing the original roster marked Amended and the corrected roster now Published, same date, full audit trail"></div>
+        <div class="ftime">Re-approve &amp; publish</div>
+        <h4>Approver · History</h4>
+        <p>Submitted and published through the same approval step as any roster. The original goes live for staff. The record for this date now shows both.</p>
+      </div>
+    </div>
+    <div class="scenario-takeaway">
+      <span class="mk">✦</span>
+      <p><strong>Same day, one date, two versions, zero manual reconciliation:</strong> the corrected roster is published, the original is kept as an Amended record rather than deleted, and every staff member on the new version sees the right shift on My Schedule — the whole correction goes through the same review path as any other roster, just faster.</p>
     </div>
   </div>
 </section>
