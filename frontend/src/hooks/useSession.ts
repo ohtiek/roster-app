@@ -30,11 +30,17 @@ async function resolveSession(user: User): Promise<ResolvedSession> {
   const isRegionalAdmin = !!profile
 
   // Check if user has a staff record linked to their auth uid
-  const { data: staffRow } = await supabase
+  const { data: staffRow, error: staffError } = await supabase
     .from('staff')
     .select('id, staff_boutiques(boutique_id)')
     .eq('user_id', user.id)
     .maybeSingle()
+
+  if (staffError) {
+    // Swallowing this silently would misroute a staff login to the reader
+    // portal with no diagnostic trail, since staffRow just ends up null.
+    console.error('Failed to resolve staff record for session:', staffError)
+  }
 
   const boutiqueRoles: UserBoutiqueRole[] = (roles ?? []).map((r: any) => ({
     boutique_id: r.boutique_id,
