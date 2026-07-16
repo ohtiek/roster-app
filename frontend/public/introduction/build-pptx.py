@@ -227,17 +227,17 @@ heading(s, MX, Inches(0.78), CW, 'A scheduling system built around who actually 
 
 copy_w = Inches(7.1)
 add_bullets(s, MX, Inches(1.85), copy_w, Inches(5.2), [
-    'Rebuilt from a single admin screen into three working, role-scoped portals — Admin, Approver and Staff — plus a fourth (Reader, a read-only published-roster browser) reserved for a later phase.',
-    'Every roster moves through the same tracked lifecycle: draft → submitted → approved → published (with reject and amend paths), scored out of 100 by one scoring module shared by the generator and manual edits alike.',
-    'Staff, VIC clients, shifts, rules and scoring weights are stored per boutique in one data model. The current dataset has two boutiques configured (Sydney and Melbourne); adding another is configuration, not a new build.',
+    'All four role-scoped portals are now live — Admin, Approver, Staff and Reader — each behind its own sign-in. Every user lands directly in the screen built for their job.',
+    'Every roster follows the same lifecycle: draft → submitted → approved → published, with reject and amend paths and a full audit trail. One scoring engine judges both automatic generation and manual edits.',
+    'Staff, VIC clients, shifts and rules are all configured per boutique in one data model. The current dataset covers two boutiques (Sydney and Melbourne); adding a third is configuration, not new engineering.',
 ], size=13.5)
 
 card_x = MX + copy_w + Inches(0.35)
 card_w = CW - copy_w - Inches(0.35)
 cards = [
-    ("WHO IT'S FOR", "Store or regional operations admins, the manager who signs off each roster, and every floor employee checking their own shifts."),
-    ('WHAT CHANGED RECENTLY', 'Split into four dedicated portals with real sign-in; added submit → approve → publish, live-rescoring manual edits, leave tracking, and per-boutique rules.'),
-    ('WHY IT MATTERS FOR BUDGET', 'One codebase and one data model serve every boutique — scaling to another store is configuration inside the existing schema, not a new build.'),
+    ("WHO IT'S FOR", "Operations admins, the manager who approves each roster, floor staff checking their shifts, and read-only viewers browsing published rosters."),
+    ('WHAT CHANGED RECENTLY', 'The Reader portal shipped — published-roster browsing with CSV/PDF export — completing all four portals.'),
+    ('WHY IT MATTERS FOR BUDGET', 'One codebase, one data model, every boutique — a new store is configuration, not a rebuild.'),
 ]
 cy = Inches(1.85)
 for k, v in cards:
@@ -262,7 +262,7 @@ portals = [
     ('ADMIN', AMBER_BG, AMBER_TX, 'Operations control', 'Generate and edit rosters, manage staff, VIC clients, shifts, rules and leave — all scoped to the active boutique.', 'Store / regional admin'),
     ('APPROVER', AMBER_BG, AMBER_TX, 'Sign-off & publish', 'A focused inbox of rosters awaiting review, with approve, reject and publish — kept separate from whoever built the draft.', 'Boutique / regional manager'),
     ('STAFF', BLUE_BG, BLUE_TX, 'My Schedule', 'Employees see their own upcoming shifts straight from the published roster, no admin access required.', 'Floor staff'),
-    ('READER', PURPLE_BG, PURPLE_TX, 'Published view (planned)', 'A read-only, PDF/CSV-exportable roster browser for a shared back-of-house screen or printout.', 'Shared / front-of-house'),
+    ('READER', PURPLE_BG, PURPLE_TX, 'Published Rosters', 'A read-only roster browser with one-click CSV and PDF export, for a shared back-of-house screen or printout.', 'Shared / front-of-house'),
 ]
 gap = Inches(0.25)
 card_w = (CW - gap * 3) / 4
@@ -496,6 +496,20 @@ feature_slide(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
+# READER · PUBLISHED ROSTERS
+# ─────────────────────────────────────────────────────────────────────────────
+feature_slide(
+    WHITE, 'READER · PUBLISHED ROSTERS',
+    'A shared screen or a printout, without a spreadsheet in between.',
+    'Lists every published roster for its boutique and expands to the identical staff-mix and rule-flag detail view admins and approvers see, minus any edit controls. Every row exports straight to CSV or a print-ready PDF.',
+    ['Shows published rosters only — drafts and pending approvals stay invisible',
+     'One-click CSV export for downstream systems, PDF for printing or a shared screen',
+     'No admin or approver access required — a login scoped to one boutique, read-only'],
+    A.format('reader-detail.png'), image_right=False,
+    caption='Read-only roster detail, with CSV and PDF export on every row',
+)
+
+# ─────────────────────────────────────────────────────────────────────────────
 # SCENARIO: ad-hoc availability change
 # ─────────────────────────────────────────────────────────────────────────────
 s = add_slide(WARM)
@@ -560,9 +574,9 @@ rows = [
     ('Staff', 'My Schedule', 'Every floor employee',
      '"What\'s my shift?" messages to the manager',
      "Removes a constant low-value interruption from every admin's day"),
-    ('Reader', 'Published Rosters — planned', 'Shared/back-of-house display',
-     'Printed roster taped to a wall',
-     'Always-current view with no reprint cycle once delivered'),
+    ('Reader', 'Published Rosters', 'Shared/back-of-house display',
+     'Printed roster taped to a wall, manual CSV exports',
+     'Always-current view, plus one-click CSV/PDF export, with no reprint cycle'),
 ]
 tbl_top = Inches(2.0)
 tbl_left = MX
@@ -640,12 +654,11 @@ add_text(s, MX, Inches(1.65), CW, Inches(0.5),
 road = [
     ('Staff leave requests', 'Let employees submit their own unavailability instead of going through an admin.'),
     ('Team view for staff', 'Let staff see the published roster for their whole boutique, not just their own shifts.'),
-    ('Reader / published-roster browser', 'Read-only roster browsing with PDF/CSV export for shared displays and print.'),
 ]
 gap = Inches(0.3)
-rw = (CW - gap * 2) / 3
+rw = (CW - gap) / 2
 ry = Inches(2.5)
-rh = Inches(2.6)
+rh = Inches(2.2)
 for i, (title, body) in enumerate(road):
     rx = MX + i * (rw + gap)
     add_rect(s, rx, ry, rw, rh, fill=WHITE, line_color=LINE, line_w=Pt(0.75), round_=True)
