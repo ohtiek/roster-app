@@ -1,0 +1,96 @@
+:root {
+  --dash-border: #E0DDD7; --dash-text: #1A1F2B; --dash-muted: #6B7280;
+  --dash-surface: #fff; --dash-hover: #F5F3EF; --dash-accent: #B8973A;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --dash-border: #243050; --dash-text: #E4E0D8; --dash-muted: #8090A8;
+          --dash-surface: #141C2C; --dash-hover: #1A2438; --dash-accent: #C9A84C; }
+}
+:root[data-theme="light"] { --dash-border: #E0DDD7; --dash-text: #1A1F2B; --dash-muted: #6B7280;
+  --dash-surface: #fff; --dash-hover: #F5F3EF; --dash-accent: #B8973A; }
+:root[data-theme="dark"]  { --dash-border: #243050; --dash-text: #E4E0D8; --dash-muted: #8090A8;
+  --dash-surface: #141C2C; --dash-hover: #1A2438; --dash-accent: #C9A84C; }
+
+.page { display: flex; flex-direction: column; }
+
+/* ── Table ── */
+.tableWrap { overflow-x: auto; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+.table th {
+  text-align: left; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--dash-muted);
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--dash-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--dash-border);
+  color: var(--dash-text);
+  vertical-align: middle;
+}
+
+.row:hover td { background: var(--dash-hover); }
+.row.rowExpanded td { background: var(--dash-hover); border-bottom: none; }
+
+/* ── Expand ── */
+.expandCell { width: 36px; padding-right: 0 !important; }
+
+.expandBtn {
+  background: none; border: none; cursor: pointer;
+  color: var(--dash-muted); padding: 0;
+}
+
+.chevron {
+  display: inline-block; font-size: 18px; line-height: 1;
+  transition: transform 0.15s;
+}
+.chevron.open { transform: rotate(90deg); }
+
+.dateCell { font-weight: 500; white-space: nowrap; }
+
+/* ── Score ── */
+.score { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.scoreGood { color: #16a34a; }
+.scoreMid  { color: #c47d10; }
+.scoreLow  { color: #dc2626; }
+
+.overrideCount {
+  font-size: 13px; font-weight: 500;
+  background: rgba(217,83,79,0.1); color: #d9534f;
+  border-radius: 4px; padding: 1px 6px;
+}
+
+.muted { color: var(--dash-muted); font-size: 13px; }
+
+.actionGroup { display: flex; gap: 0.5rem; }
+
+/* ── Detail row ── */
+.detailRow td { padding: 0; }
+
+.detailPanel {
+  padding: 1rem 1.5rem 1.25rem 3.25rem;
+  background: var(--dash-hover);
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.loadingSmall { font-size: 13px; color: var(--dash-muted); margin: 0; }
+
+/* ── Status/count lines ── */
+.statusMsg, .count {
+  font-size: 13px; color: var(--dash-muted);
+  padding: 1rem 2rem 0.5rem;
+  margin: 0;
+}
+.errorMsg { font-size: 13px; color: #d9534f; padding: 1rem 2rem; margin: 0; }
+
+@media (max-width: 640px) {
+  .table th, .table td { padding: 0.6rem 0.7rem; }
+  .detailPanel { padding: 1rem 1rem 1.25rem 1.75rem; }
+  .actionGroup { flex-wrap: wrap; }
+  .statusMsg, .count, .errorMsg { padding-left: 1rem; padding-right: 1rem; }
+}
