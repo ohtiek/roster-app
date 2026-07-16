@@ -27,7 +27,10 @@ function AuthGate() {
   }
 
   const { session } = state
-  const defaultPath = `/${session.portal === 'reader' ? 'view' : session.portal}`
+  const PORTAL_PATH: Record<typeof session.portal, string> = {
+    admin: 'admin', approver: 'approvals', staff: 'staff', reader: 'view',
+  }
+  const defaultPath = `/${PORTAL_PATH[session.portal]}`
 
   return (
     <AppShell session={session}>
