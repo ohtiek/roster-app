@@ -60,7 +60,7 @@ async function resolveSession(user: User): Promise<ResolvedSession> {
 
   // Boutiques the user can switch between:
   // - regional_admin sees every active boutique
-  // - admin/approver see only the boutique(s) they hold that role at
+  // - admin/approver/reader see only the boutique(s) they hold that role at
   let availableBoutiques: BoutiqueOption[] = []
   if (isRegionalAdmin) {
     const { data: allBoutiques } = await supabase
@@ -72,7 +72,7 @@ async function resolveSession(user: User): Promise<ResolvedSession> {
   } else {
     const seen = new Set<string>()
     for (const r of boutiqueRoles) {
-      if ((r.role === 'admin' || r.role === 'approver') && r.boutique_id && !seen.has(r.boutique_id)) {
+      if ((r.role === 'admin' || r.role === 'approver' || r.role === 'reader') && r.boutique_id && !seen.has(r.boutique_id)) {
         seen.add(r.boutique_id)
         availableBoutiques.push({ id: r.boutique_id, name: r.boutique_name ?? 'Boutique' })
       }
