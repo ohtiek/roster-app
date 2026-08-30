@@ -86,10 +86,14 @@ export function ShiftsPage({ session }: Props) {
 
     const shiftIds = (shiftRes.data ?? []).map(s => s.id)
     if (shiftIds.length) {
+      // Scoped to shift-wide requirements only (area_id IS NULL) — this page
+      // predates per-area requirements (migration 030) and doesn't yet have
+      // an area-management UI; area-scoped rows are left for that UI.
       const { data: reqRows } = await supabase
         .from('boutique_shift_requirements')
         .select('shift_id, skill_type_id, min_count, max_count, skill_types(name)')
         .in('shift_id', shiftIds)
+        .is('area_id', null)
 
       const byShift: Record<string, ShiftRequirement[]> = {}
       for (const r of reqRows ?? []) {
@@ -166,11 +170,19 @@ export function ShiftsPage({ session }: Props) {
     if (!draft) return
     setReqSaving(prev => ({ ...prev, [key]: true }))
 
-    await supabase.from('boutique_shift_requirements').upsert({
-      shift_id: shiftId, skill_type_id: skillTypeId,
-      min_count: parseInt(draft.min) || 1,
-      max_count: draft.max ? parseInt(draft.max) : null,
-    })
+    // Migration 030 replaced this table's (shift_id, skill_type_id) primary
+    // key with a surrogate id (to allow multiple area-scoped rows per skill),
+    // so a plain upsert() would default to conflict-checking on that new id
+    // column and always insert a duplicate instead of updating. This editor
+    // only ever edits an existing shift-wide row (adding one is addReq,
+    // below), so an explicit update scoped to the shift-wide row is correct
+    // and avoids relying on upsert's conflict target entirely.
+    await supabase.from('boutique_shift_requirements')
+      .update({
+        min_count: parseInt(draft.min) || 1,
+        max_count: draft.max ? parseInt(draft.max) : null,
+      })
+      .eq('shift_id', shiftId).eq('skill_type_id', skillTypeId).is('area_id', null)
 
     setReqSaving(prev => ({ ...prev, [key]: false }))
     setReqDraft(prev => { const n = { ...prev }; delete n[key]; return n })
@@ -179,7 +191,7 @@ export function ShiftsPage({ session }: Props) {
 
   const deleteReq = useCallback(async (shiftId: string, skillTypeId: string) => {
     await supabase.from('boutique_shift_requirements')
-      .delete().eq('shift_id', shiftId).eq('skill_type_id', skillTypeId)
+      .delete().eq('shift_id', shiftId).eq('skill_type_id', skillTypeId).is('area_id', null)
     await load()
   }, [load])
 
