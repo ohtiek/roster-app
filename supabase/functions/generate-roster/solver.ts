@@ -4,7 +4,7 @@
  * and per-boutique rule config (enable/disable, hard_block vs warning).
  */
 
-import { scoreShiftStaff, overallScore, type ScoringStaff } from '../_shared/scoring.ts'
+import { scoreShiftStaff, overallScore, type ScoringStaff } from './_shared/scoring.ts'
 
 export interface SolverShift {
   id: string
