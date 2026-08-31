@@ -93,19 +93,24 @@ export function RostersPage({ session }: Props) {
 
   // ── Expand row ──────────────────────────────────────────────────────────────
 
-  const toggleExpand = useCallback(async (id: string) => {
-    if (expandedId === id) { setExpandedId(null); setExpandedPayload(null); return }
-    setExpandedId(id); setExpandedPayload(null); setPayloadLoading(true)
-
+  const fetchPayload = useCallback(async (id: string) => {
     const { data } = await supabase
       .from('roster_history')
       .select('payload')
       .eq('id', id)
       .single()
+    return data?.payload ?? null
+  }, [])
+
+  const toggleExpand = useCallback(async (id: string) => {
+    if (expandedId === id) { setExpandedId(null); setExpandedPayload(null); return }
+    setExpandedId(id); setExpandedPayload(null); setPayloadLoading(true)
+
+    const payload = await fetchPayload(id)
 
     setPayloadLoading(false)
-    setExpandedPayload(data?.payload ?? null)
-  }, [expandedId])
+    setExpandedPayload(payload)
+  }, [expandedId, fetchPayload])
 
   // ── Generate ─────────────────────────────────────────────────────────────────
 
@@ -312,7 +317,17 @@ export function RostersPage({ session }: Props) {
                                     rosterId={roster.id}
                                     boutiqueId={boutiqueId}
                                     canEdit={roster.status === 'draft'}
-                                    onSaved={load}
+                                    onSaved={async () => {
+                                      // load() only refreshes the summary table rows (score,
+                                      // override_count, etc.) — it doesn't touch expandedPayload,
+                                      // which is separate state fetched only by toggleExpand. Without
+                                      // this, the just-saved assignments could appear to "revert" if
+                                      // this row's detail is ever re-rendered from the (stale)
+                                      // pre-save payload still sitting in expandedPayload.
+                                      const fresh = await fetchPayload(roster.id)
+                                      setExpandedPayload(fresh)
+                                      await load()
+                                    }}
                                   />
                                 )}
                               </div>
