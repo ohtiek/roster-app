@@ -242,6 +242,13 @@
   background: var(--dash-surface); color: var(--dash-text);
   padding: 3px 6px;
 }
+
+.areaSelect {
+  font-size: 11.5px;
+  border: 1px solid var(--dash-border); border-radius: 3px;
+  background: var(--dash-surface); color: var(--dash-text);
+  padding: 1px 4px;
+}
 .addStaffTrigger {
   font-size: 12px; font-weight: 500;
   color: var(--dash-accent);

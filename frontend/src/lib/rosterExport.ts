@@ -5,10 +5,10 @@ function csvEscape(value: string): string {
 }
 
 export function rosterToCsv(payload: RosterPayload, rosterDate: string, boutiqueName: string): string {
-  const header = ['Date', 'Boutique', 'Shift', 'Staff', 'Hours', 'VIC']
+  const header = ['Date', 'Boutique', 'Shift', 'Area', 'Staff', 'Hours', 'VIC']
   const rows = [...payload.assignments]
     .sort((a, b) => a.shift_name.localeCompare(b.shift_name) || a.staff_name.localeCompare(b.staff_name))
-    .map(a => [rosterDate, boutiqueName, a.shift_name, a.staff_name, String(a.shift_duration_hours), a.is_vic_active ? 'Yes' : 'No'])
+    .map(a => [rosterDate, boutiqueName, a.shift_name, a.area_name ?? '', a.staff_name, String(a.shift_duration_hours), a.is_vic_active ? 'Yes' : 'No'])
   return [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\n')
 }
 
@@ -47,7 +47,7 @@ export function printRoster(payload: RosterPayload, rosterDate: string, boutique
       <ul>
         ${assigned
           .sort((a, b) => a.staff_name.localeCompare(b.staff_name))
-          .map(a => `<li>${escapeHtml(a.staff_name)}${a.is_vic_active ? ' <span class="vic">VIC</span>' : ''} — ${a.shift_duration_hours}h</li>`)
+          .map(a => `<li>${escapeHtml(a.staff_name)}${a.area_name ? ` <span class="area">(${escapeHtml(a.area_name)})</span>` : ''}${a.is_vic_active ? ' <span class="vic">VIC</span>' : ''} — ${a.shift_duration_hours}h</li>`)
           .join('')}
       </ul>
     `).join('')
@@ -64,6 +64,7 @@ export function printRoster(payload: RosterPayload, rosterDate: string, boutique
           ul { margin: 0; padding-left: 1.25rem; font-size: 13px; }
           li { margin-bottom: 0.25rem; }
           .vic { font-size: 10px; font-weight: 700; color: #b8973a; }
+          .area { font-size: 12px; color: #6b7280; }
           @media print { body { padding: 0.5rem; } }
         </style>
       </head>

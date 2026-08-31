@@ -235,6 +235,8 @@ export interface RosterAssignment {
   staff_name: string
   is_vic_active: boolean
   shift_duration_hours: number
+  area_id: string | null    // the area this assignment fills, if any
+  area_name: string | null
 }
 
 export interface RosterShiftScore {
@@ -243,7 +245,7 @@ export interface RosterShiftScore {
   score: number
   headcount: number
   skill_ok: boolean
-  unmet_requirements: { skill_name: string; min_count: number; assigned: number }[]
+  unmet_requirements: { skill_name: string; area_name: string | null; min_count: number; assigned: number }[]
   vic_ok: boolean
   gender_pct_female: number
   languages: string[]

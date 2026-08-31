@@ -422,6 +422,7 @@ export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }
 
   const [addingToShift, setAddingToShift] = useState<string | null>(null)
   const [addSelection, setAddSelection] = useState('')
+  const [addSelectionArea, setAddSelectionArea] = useState('')   // '' = shift-wide
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -466,6 +467,7 @@ export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }
     const staff = refData.staffById.get(addSelection)
     const shift = shiftOrder.find(s => s.shift_id === shiftId)
     if (!staff || !shift) return
+    const area = addSelectionArea ? refData.areas.find(a => a.id === addSelectionArea) : null
     applyAssignments([...assignments, {
       shift_id: shiftId,
       shift_name: shift.shift_name,
@@ -473,12 +475,24 @@ export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }
       staff_name: staff.name,
       is_vic_active: refData.vicClients.some(vc => vc.advisor_staff_ids.includes(staff.id)),
       shift_duration_hours: shift.duration_hours,
+      area_id: area?.id ?? null,
+      area_name: area?.name ?? null,
     }])
-    setAddingToShift(null); setAddSelection('')
+    setAddingToShift(null); setAddSelection(''); setAddSelectionArea('')
   }
 
   function removeStaff(shiftId: string, staffId: string) {
     applyAssignments(assignments.filter(a => !(a.shift_id === shiftId && a.staff_id === staffId)))
+  }
+
+  function setAssignmentArea(shiftId: string, staffId: string, areaId: string) {
+    if (!refData) return
+    const area = areaId ? refData.areas.find(a => a.id === areaId) : null
+    applyAssignments(assignments.map(a =>
+      a.shift_id === shiftId && a.staff_id === staffId
+        ? { ...a, area_id: area?.id ?? null, area_name: area?.name ?? null }
+        : a
+    ))
   }
 
   function cancelEditing() {
@@ -587,6 +601,18 @@ export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }
                       <span key={a.staff_id} className={styles.assignChip}>
                         <span className={styles.assignName}>{a.staff_name}</span>
                         {a.is_vic_active && <span className={styles.vicBadge}>VIC</span>}
+                        {editing && refData ? (
+                          <select
+                            className={styles.areaSelect}
+                            value={a.area_id ?? ''}
+                            onChange={e => setAssignmentArea(shift.shift_id, a.staff_id, e.target.value)}
+                          >
+                            <option value="">Shift-wide</option>
+                            {refData.areas.map(ar => <option key={ar.id} value={ar.id}>{ar.name}</option>)}
+                          </select>
+                        ) : (
+                          a.area_name && <span className={styles.assignSkill}>{a.area_name}</span>
+                        )}
                         {editing && (
                           <button
                             className={styles.removeStaffBtn}
@@ -613,10 +639,18 @@ export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }
                         .filter(s => !assigned.some(a => a.staff_id === s.id))
                         .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
+                    <select
+                      className={styles.areaSelect}
+                      value={addSelectionArea}
+                      onChange={e => setAddSelectionArea(e.target.value)}
+                    >
+                      <option value="">Shift-wide</option>
+                      {refData.areas.map(ar => <option key={ar.id} value={ar.id}>{ar.name}</option>)}
+                    </select>
                     <Button variant="primary" size="sm" disabled={!addSelection}
                       onClick={() => addStaff(shift.shift_id)}>Add</Button>
                     <Button variant="ghost" size="sm"
-                      onClick={() => { setAddingToShift(null); setAddSelection('') }}>Cancel</Button>
+                      onClick={() => { setAddingToShift(null); setAddSelection(''); setAddSelectionArea('') }}>Cancel</Button>
                   </div>
                 ) : (
                   <button className={styles.addStaffTrigger} onClick={() => setAddingToShift(shift.shift_id)}>
@@ -648,7 +682,7 @@ export function RosterDetail({ payload, rosterId, boutiqueId, canEdit, onSaved }
                 <div className={styles.unmetList}>
                   {shift.unmet_requirements.map((u, i) => (
                     <span key={i} className={styles.unmetChip}>
-                      {u.skill_name}: need {u.min_count}, have {u.assigned}
+                      {u.area_name ? `${u.area_name}: ` : ''}{u.skill_name}: need {u.min_count}, have {u.assigned}
                     </span>
                   ))}
                 </div>
