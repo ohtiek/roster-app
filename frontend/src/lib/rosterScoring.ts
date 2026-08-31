@@ -174,7 +174,7 @@ export function recomputeRoster(
     // covering on this shift), not on the staff's static profile, so it's
     // merged in here rather than carried on ref.staffById's entries.
     const scoringStaff = assignedHere
-      .map(a => {
+      .map((a): ScoringStaff | null => {
         const base = ref.staffById.get(a.staff_id)
         return base ? { ...base, area_id: a.area_id } : null
       })
