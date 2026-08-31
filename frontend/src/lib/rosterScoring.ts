@@ -14,7 +14,7 @@ import {
   scoreShiftStaff, overallScore,
   type ScoringStaff, type ScoringRequirement, type ScoringVicClient, type ScoringWeights,
 } from '../../../supabase/functions/_shared/scoring.ts'
-import type { RosterAssignment, RosterShiftScore, RosterVicCoverage } from './types'
+import type { RosterAssignment, RosterShiftScore, RosterVicCoverage, BoutiqueArea } from './types'
 
 export interface ShiftOrderEntry {
   shift_id: string
@@ -26,6 +26,7 @@ export interface ScoringRefData {
   staffById: Map<string, ScoringStaff>
   allStaff: { id: string; name: string }[]
   requirementsByShift: Map<string, ScoringRequirement[]>
+  areas: BoutiqueArea[]   // active areas, for the assignment area picker
   vicClients: ScoringVicClient[]
   vicClientNames: Map<string, string>
   weights: ScoringWeights
@@ -65,10 +66,11 @@ export async function loadScoringRefData(boutiqueId: string, shiftIds: string[])
     { data: vicClientBoutiques },
     { data: weightsRow },
     { data: ruleRows },
+    { data: areaRows },
   ] = await Promise.all([
     supabase.from('staff_boutiques').select('staff_id').eq('boutique_id', boutiqueId),
     supabase.from('boutique_shift_requirements')
-      .select('shift_id, min_count, skill_types(id, name)')
+      .select('shift_id, min_count, area_id, boutique_areas(name), skill_types(id, name)')
       .in('shift_id', shiftIds),
     supabase.from('vic_client_boutiques').select('vic_client_id').eq('boutique_id', boutiqueId),
     supabase.from('scoring_weights')
@@ -77,6 +79,8 @@ export async function loadScoringRefData(boutiqueId: string, shiftIds: string[])
     supabase.from('boutique_rule_config')
       .select('rule_key, is_enabled').eq('boutique_id', boutiqueId)
       .in('rule_key', ['vic_coverage', 'gender_balance']),
+    supabase.from('boutique_areas').select('id, name, sort_order, is_active')
+      .eq('boutique_id', boutiqueId).eq('is_active', true).order('sort_order'),
   ])
 
   const staffIds = (staffBoutiques ?? []).map(r => r.staff_id)
@@ -120,9 +124,11 @@ export async function loadScoringRefData(boutiqueId: string, shiftIds: string[])
   const requirementsByShift = new Map<string, ScoringRequirement[]>()
   for (const r of reqRows ?? []) {
     const st = r.skill_types as any
+    const area = r.boutique_areas as any
     if (!requirementsByShift.has(r.shift_id)) requirementsByShift.set(r.shift_id, [])
     requirementsByShift.get(r.shift_id)!.push({
       skill_type_id: st.id, skill_name: st.name, min_count: r.min_count,
+      area_id: r.area_id, area_name: area?.name ?? null,
     })
   }
 
@@ -142,6 +148,7 @@ export async function loadScoringRefData(boutiqueId: string, shiftIds: string[])
     staffById,
     allStaff: (staffRows ?? []).map(s => ({ id: s.id, name: s.name })).sort((a, b) => a.name.localeCompare(b.name)),
     requirementsByShift,
+    areas: areaRows ?? [],
     vicClients,
     vicClientNames,
     weights: weightsRow ?? DEFAULT_WEIGHTS,
@@ -163,8 +170,14 @@ export function recomputeRoster(
 
   const shiftScores: RosterShiftScore[] = shiftOrder.map(({ shift_id, shift_name }) => {
     const assignedHere = byShift.get(shift_id) ?? []
+    // area_id lives on the assignment (which area this staff member is
+    // covering on this shift), not on the staff's static profile, so it's
+    // merged in here rather than carried on ref.staffById's entries.
     const scoringStaff = assignedHere
-      .map(a => ref.staffById.get(a.staff_id))
+      .map(a => {
+        const base = ref.staffById.get(a.staff_id)
+        return base ? { ...base, area_id: a.area_id } : null
+      })
       .filter((s): s is ScoringStaff => !!s)
     const requirements = ref.requirementsByShift.get(shift_id) ?? []
     const result = scoreShiftStaff(
