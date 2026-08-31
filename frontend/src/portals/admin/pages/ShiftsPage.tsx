@@ -63,6 +63,13 @@ export function ShiftsPage({ session }: Props) {
   const [addReqMin, setAddReqMin] = useState('1')
   const [addReqArea, setAddReqArea] = useState('')   // '' = shift-wide
 
+  // areas
+  const [areaDraft, setAreaDraft] = useState<Record<string, { name: string; sort_order: string }>>({})
+  const [areaSaving, setAreaSaving] = useState<Record<string, boolean>>({})
+  const [areaError, setAreaError] = useState<string | null>(null)
+  const [newAreaName, setNewAreaName] = useState('')
+  const [addingArea, setAddingArea] = useState(false)
+
   // closures
   const [closureDate, setClosureDate] = useState('')
   const [closureReason, setClosureReason] = useState('')
@@ -78,8 +85,10 @@ export function ShiftsPage({ session }: Props) {
       supabase.from('boutique_shifts').select('*').eq('boutique_id', boutiqueId).order('sort_order'),
       supabase.from('skill_types').select('*').order('engine_priority', { ascending: false }),
       supabase.from('boutique_closures').select('id, closure_date, reason').eq('boutique_id', boutiqueId).order('closure_date'),
+      // Not filtered to is_active — the Areas section manages inactive areas
+      // too; the requirement editor's area picker filters to active ones itself.
       supabase.from('boutique_areas').select('id, name, sort_order, is_active')
-        .eq('boutique_id', boutiqueId).eq('is_active', true).order('sort_order'),
+        .eq('boutique_id', boutiqueId).order('sort_order'),
     ])
 
     if (shiftRes.error) { setError(shiftRes.error.message); setLoading(false); return }
@@ -219,6 +228,43 @@ export function ShiftsPage({ session }: Props) {
     setAddReqShift(null); setAddReqSkill(''); setAddReqMin('1'); setAddReqArea('')
     await load()
   }, [addReqSkill, addReqMin, addReqArea, load])
+
+  // ── Areas ────────────────────────────────────────────────────────────────────
+
+  const saveArea = useCallback(async (areaId: string) => {
+    const draft = areaDraft[areaId]
+    if (!draft || !draft.name.trim()) return
+    setAreaSaving(prev => ({ ...prev, [areaId]: true })); setAreaError(null)
+
+    const { error } = await supabase.from('boutique_areas')
+      .update({ name: draft.name.trim(), sort_order: parseInt(draft.sort_order) || 0 })
+      .eq('id', areaId)
+
+    setAreaSaving(prev => ({ ...prev, [areaId]: false }))
+    if (error) { setAreaError(error.message); return }
+    setAreaDraft(prev => { const n = { ...prev }; delete n[areaId]; return n })
+    await load()
+  }, [areaDraft, load])
+
+  const toggleAreaActive = useCallback(async (areaId: string, currentlyActive: boolean) => {
+    await supabase.from('boutique_areas').update({ is_active: !currentlyActive }).eq('id', areaId)
+    await load()
+  }, [load])
+
+  const addArea = useCallback(async () => {
+    if (!boutiqueId || !newAreaName.trim()) return
+    setAddingArea(true); setAreaError(null)
+    const nextSort = areas.length ? Math.max(...areas.map(a => a.sort_order)) + 1 : 0
+
+    const { error } = await supabase.from('boutique_areas').insert({
+      boutique_id: boutiqueId, name: newAreaName.trim(), sort_order: nextSort,
+    })
+
+    setAddingArea(false)
+    if (error) { setAreaError(error.message); return }
+    setNewAreaName('')
+    await load()
+  }, [boutiqueId, newAreaName, areas, load])
 
   // ── Closures ─────────────────────────────────────────────────────────────────
 
@@ -366,7 +412,7 @@ export function ShiftsPage({ session }: Props) {
                             <select className={styles.addReqSelect} value={addReqArea}
                               onChange={e => setAddReqArea(e.target.value)}>
                               <option value="">Shift-wide</option>
-                              {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                              {areas.filter(a => a.is_active).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                             <select className={styles.addReqSelect} value={addReqSkill}
                               onChange={e => setAddReqSkill(e.target.value)}>
@@ -393,6 +439,57 @@ export function ShiftsPage({ session }: Props) {
               })}
             </div>
           )}
+        </section>
+
+        {/* ── Areas ── */}
+        <section className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Areas</h2>
+              <p className={styles.cardDesc}>Physical zones within this boutique (e.g. Counter, Fitting Room, Stockroom) that shift requirements can be scoped to. Deactivate an area to hide it from the requirement editor without deleting its history.</p>
+            </div>
+          </div>
+
+          <div className={styles.closureList}>
+            {areas.length === 0 && <p className={styles.empty}>No areas defined yet.</p>}
+            {areas.map(a => {
+              const draft = areaDraft[a.id]
+              const nameVal = draft?.name ?? a.name
+              const sortVal = draft?.sort_order ?? String(a.sort_order)
+              const saving = areaSaving[a.id]
+              return (
+                <div key={a.id} className={styles.closureRow} style={{ opacity: a.is_active ? 1 : 0.55 }}>
+                  <input className={styles.input} style={{ maxWidth: 220 }} value={nameVal}
+                    onChange={e => setAreaDraft(p => ({ ...p, [a.id]: { name: e.target.value, sort_order: sortVal } }))} />
+                  <input type="number" className={styles.reqInput} value={sortVal} min={0}
+                    title="Sort order"
+                    onChange={e => setAreaDraft(p => ({ ...p, [a.id]: { name: nameVal, sort_order: e.target.value } }))} />
+                  {!a.is_active && <em className={styles.hint}>Inactive</em>}
+                  <div className={styles.reqRowActions} style={{ marginLeft: 'auto' }}>
+                    {draft && (
+                      <button className={styles.saveReqBtn} disabled={saving} onClick={() => saveArea(a.id)}>
+                        {saving ? '…' : 'Save'}
+                      </button>
+                    )}
+                    <button className={styles.actionBtn} onClick={() => toggleAreaActive(a.id, a.is_active)}>
+                      {a.is_active ? 'Deactivate' : 'Reactivate'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className={styles.addClosureRow}>
+            <input type="text" className={styles.input} style={{ maxWidth: 220 }}
+              placeholder="Area name" value={newAreaName}
+              onChange={e => setNewAreaName(e.target.value)} />
+            <Button variant="secondary" size="sm" loading={addingArea}
+              disabled={!newAreaName.trim()} onClick={addArea}>
+              Add area
+            </Button>
+            {areaError && <span className={styles.errorMsg} style={{ padding: 0 }}>{areaError}</span>}
+          </div>
         </section>
 
         {/* ── Closure dates ── */}
