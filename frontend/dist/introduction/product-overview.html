@@ -119,6 +119,16 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
 .shot-frame.mobile{max-width:280px;margin:0 auto}
 .shot-cap{font-size:11px;color:var(--muted);margin-top:10px;text-align:center;font-style:italic}
 
+/* ── Area-scoped requirements diagram (illustrative, not a screenshot) ── */
+.area-demo{background:white;border-radius:10px;border:0.5px solid var(--line);box-shadow:0 12px 32px -12px rgba(20,29,74,.18);padding:24px 26px}
+.area-demo-title{font-family:var(--serif);font-size:14.5px;color:var(--navy);margin-bottom:16px}
+.area-demo-title b{color:var(--gold)}
+.area-demo-zones{display:flex;flex-direction:column;gap:10px}
+.area-zone{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--warm);border-radius:8px;padding:12px 16px}
+.zone-name{font-size:13px;font-weight:600;color:var(--navy);flex-shrink:0}
+.zone-reqs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.zone-chip{font-size:11px;font-weight:500;background:white;border:0.5px solid var(--line);border-radius:4px;padding:3px 9px;color:var(--ink);white-space:nowrap}
+
 /* ── Budget section ── */
 .budget{background:var(--navy-deep);color:var(--cream)}
 .budget h2{color:white;font-size:clamp(24px,3vw,34px);margin-bottom:10px}
@@ -184,14 +194,14 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
     <h2>A scheduling system built around who actually touches it.</h2>
     <div class="exec-grid" style="margin-top:28px">
       <div class="exec-copy">
-        <p>The platform has been rebuilt from a single admin screen into <strong>three working, role-scoped portals</strong> — Admin, Approver and Staff — plus a fourth (Reader, a read-only published-roster browser) reserved for a later phase. Each user signs in once and lands directly in the portal that matches their access, rather than one shared screen with everything visible to everyone.</p>
-        <p>Every roster moves through the same tracked lifecycle: <strong>draft → submitted → approved → published</strong> (with reject and amend paths), generated automatically from a boutique's staff, VIC appointments, leave records and shift rules, and scored out of 100 by a single scoring module shared by both the automatic generator and manual edits — so a hand adjustment and a fresh generation are always judged the same way.</p>
-        <p>Staff, VIC clients, shifts, rules and scoring weights are all stored per boutique in one data model, and a regional admin already switches between boutiques from a single login. The current dataset has two boutiques configured (Sydney and Melbourne); adding another is a matter of entering that boutique's own staff and rules into the existing schema, not building new screens.</p>
+        <p><strong>All four role-scoped portals are now live</strong> — Admin, Approver, Staff and Reader — each behind its own sign-in. Every user lands directly in the screen built for their job; nobody sees a feature they don't need.</p>
+        <p>Every roster follows the same lifecycle: <strong>draft → submitted → approved → published</strong>, with reject and amend paths and a full audit trail. One scoring engine judges both automatic generation and manual edits, so the two are always scored the same way.</p>
+        <p>Staff, VIC clients, shifts and rules are all configured per boutique in one data model. The current dataset covers two boutiques (Sydney and Melbourne); adding a third is configuration, not new engineering.</p>
       </div>
       <div class="exec-cards">
-        <div class="exec-card"><div class="k">Who it's for</div><div class="v">Store or regional operations admins, the manager who signs off each roster, and every floor employee checking their own shifts.</div></div>
-        <div class="exec-card"><div class="k">What changed recently</div><div class="v">Split into four dedicated portals with real sign-in; added the submit → approve → publish workflow, manual roster editing with live re-scoring, leave tracking, and per-boutique rule configuration.</div></div>
-        <div class="exec-card"><div class="k">Why it matters for budget</div><div class="v">One codebase and one data model serve every boutique — scaling to another store is configuration and data entry inside the existing schema, not a new build.</div></div>
+        <div class="exec-card"><div class="k">Who it's for</div><div class="v">Operations admins, the manager who approves each roster, floor staff checking their shifts, and read-only viewers browsing published rosters.</div></div>
+        <div class="exec-card"><div class="k">What changed recently</div><div class="v">Skill requirements can now be scoped to a specific area of the floor (Counter, Fitting Room, Concierge…), not just the shift as a whole — carried through generation, manual edits, exports and each employee's own schedule.</div></div>
+        <div class="exec-card"><div class="k">Why it matters for budget</div><div class="v">One codebase, one data model, every boutique — a new store is configuration, not a rebuild.</div></div>
       </div>
     </div>
   </div>
@@ -224,8 +234,8 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
       </div>
       <div class="portal-card">
         <span class="tag tag-reader">Reader</span>
-        <h3>Published view <span style="opacity:.5;font-weight:400">(planned)</span></h3>
-        <p>A read-only, PDF/CSV-exportable roster browser for a shared back-of-house screen or printout.</p>
+        <h3>Published Rosters</h3>
+        <p>A read-only roster browser with one-click CSV and PDF export, for a shared back-of-house screen or printout.</p>
         <div class="who">Shared / front-of-house</div>
       </div>
     </div>
@@ -328,6 +338,7 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
       <p>Add or remove anyone from a shift and the score, skill coverage and VIC-coverage badges recompute instantly — using the same scoring logic the generator itself uses, so a manual fix and a fresh generation are always judged the same way.</p>
       <ul class="feature-list">
         <li>Add-from-bench and remove-in-place, no page reload</li>
+        <li>Reassign which area of the floor a staff member is covering, right from the same edit view</li>
         <li>Overrides are tracked and shown to the approver for context</li>
         <li>Nothing is submitted until a manager is satisfied with the result</li>
       </ul>
@@ -390,6 +401,34 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
         <li>Independent shift definitions per boutique — no shared template lock-in</li>
         <li>Minimum (and optional maximum) headcount per skill, per shift</li>
         <li>Closure dates the engine automatically respects</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── Admin feature 5b: Area-scoped requirements ── -->
+<section class="section feature">
+  <div class="wrap feature-row rev">
+    <div class="shot-col">
+      <div class="area-demo">
+        <div class="area-demo-title">Shift: <b>Opening</b> — requirements by area</div>
+        <div class="area-demo-zones">
+          <div class="area-zone"><span class="zone-name">Counter</span><div class="zone-reqs"><span class="zone-chip">Cashier ×1</span></div></div>
+          <div class="area-zone"><span class="zone-name">Fitting Room</span><div class="zone-reqs"><span class="zone-chip">Sr. Stylist ×1</span></div></div>
+          <div class="area-zone"><span class="zone-name">Concierge</span><div class="zone-reqs"><span class="zone-chip">VIC Advisor ×1</span></div></div>
+          <div class="area-zone"><span class="zone-name">Shift-wide</span><div class="zone-reqs"><span class="zone-chip">Floor Manager ×1</span></div></div>
+        </div>
+      </div>
+      <div class="shot-cap">Illustrative — a shift's skill requirements, broken out by area of the floor</div>
+    </div>
+    <div class="copy-col feature-copy">
+      <span class="role-tag">Admin · Shifts &amp; Rosters</span>
+      <h3>Staffing minimums for a specific part of the floor, not just the shift as a whole.</h3>
+      <p>Areas — Counter, Fitting Room, Concierge, Stockroom, or however a boutique lays out its floor — carry their own skill requirements alongside the shift-wide ones. The scheduling engine fills the tighter, area-specific need first, then rounds out the rest of the shift from whoever's left.</p>
+      <ul class="feature-list">
+        <li>Define any number of areas per boutique, activated or retired independently — no code change to add one</li>
+        <li>A requirement can be area-specific or shift-wide, and both are supported side by side on the same shift</li>
+        <li>Every assignment carries its area end to end: roster editing, CSV/PDF export, and each employee's own schedule</li>
       </ul>
     </div>
   </div>
@@ -478,6 +517,26 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
   </div>
 </section>
 
+<!-- ── Reader feature ── -->
+<section class="section feature">
+  <div class="wrap feature-row rev">
+    <div class="shot-col">
+      <div class="shot-frame"><img src="assets/overview/reader-detail.png" alt="Published Rosters page showing an expanded roster with the same staff-mix detail view, plus CSV and PDF export buttons"></div>
+      <div class="shot-cap">Read-only roster detail, with CSV and PDF export on every row</div>
+    </div>
+    <div class="copy-col feature-copy">
+      <span class="role-tag">Reader · Published Rosters</span>
+      <h3>A shared screen or a printout, without a spreadsheet in between.</h3>
+      <p>The Reader portal lists every published roster for its boutique — scoped by the same row-level security as the other portals — and expands to the identical staff-mix and rule-flag detail view admins and approvers see, minus any edit controls. Every row exports straight to CSV or a print-ready PDF.</p>
+      <ul class="feature-list">
+        <li>Shows published rosters only — drafts and pending approvals stay invisible</li>
+        <li>One-click CSV export for downstream systems, PDF for printing or a shared screen</li>
+        <li>No admin or approver access required — a login scoped to one boutique, read-only</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <!-- ── Scenario: ad-hoc availability change ── -->
 <section class="section scenario section-line">
   <div class="wrap">
@@ -544,10 +603,10 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
           <td>Removes a constant low-value interruption from every admin's day</td>
         </tr>
         <tr>
-          <td><span class="role">Reader</span><div class="sub">Published Rosters — planned</div></td>
+          <td><span class="role">Reader</span><div class="sub">Published Rosters</div></td>
           <td>Shared/back-of-house display</td>
-          <td>Printed roster taped to a wall</td>
-          <td>Always-current view with no reprint cycle once delivered</td>
+          <td>Printed roster taped to a wall, manual CSV exports</td>
+          <td>Always-current view, plus one-click CSV/PDF export, with no reprint cycle</td>
         </tr>
       </tbody>
     </table>
@@ -575,7 +634,6 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
     <div class="road-grid">
       <div class="road-card"><span class="status">Phase 4</span><h4>Staff leave requests</h4><p>Let employees submit their own unavailability instead of going through an admin.</p></div>
       <div class="road-card"><span class="status">Phase 4</span><h4>Team view for staff</h4><p>Let staff see the published roster for their whole boutique, not just their own shifts.</p></div>
-      <div class="road-card"><span class="status">Phase 4</span><h4>Reader / published-roster browser</h4><p>Read-only roster browsing with PDF/CSV export for shared displays and print.</p></div>
     </div>
   </div>
 </section>
