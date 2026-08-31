@@ -12,6 +12,7 @@ interface UpcomingShift {
   shift_name: string
   shift_duration_hours: number
   is_vic_active: boolean
+  area_name: string | null
 }
 
 function fmtDayName(d: string) {
@@ -57,6 +58,7 @@ function MySchedule({ session }: Props) {
               shift_name: a.shift_name,
               shift_duration_hours: a.shift_duration_hours,
               is_vic_active: a.is_vic_active,
+              area_name: a.area_name,
             })
           }
         }
@@ -95,6 +97,7 @@ function MySchedule({ session }: Props) {
               {dayShifts.map((s, i) => (
                 <div key={i} className={styles.shiftRow}>
                   <span className={styles.shiftName}>{s.shift_name}</span>
+                  {s.area_name && <span className={styles.shiftArea}>{s.area_name}</span>}
                   {s.is_vic_active && <span className={styles.vicBadge}>VIC</span>}
                   <span className={styles.shiftHours}>{s.shift_duration_hours}h</span>
                 </div>
