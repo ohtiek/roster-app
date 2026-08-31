@@ -236,7 +236,7 @@ card_x = MX + copy_w + Inches(0.35)
 card_w = CW - copy_w - Inches(0.35)
 cards = [
     ("WHO IT'S FOR", "Operations admins, the manager who approves each roster, floor staff checking their shifts, and read-only viewers browsing published rosters."),
-    ('WHAT CHANGED RECENTLY', 'The Reader portal shipped — published-roster browsing with CSV/PDF export — completing all four portals.'),
+    ('WHAT CHANGED RECENTLY', "Skill requirements can now be scoped to a specific area of the floor (Counter, Fitting Room, Concierge…), not just the shift as a whole — carried through generation, manual edits, exports and each employee's own schedule."),
     ('WHY IT MATTERS FOR BUDGET', 'One codebase, one data model, every boutique — a new store is configuration, not a rebuild.'),
 ]
 cy = Inches(1.85)
@@ -396,6 +396,7 @@ feature_slide(
     'Managers keep the final say, with the score watching in real time.',
     'Add or remove anyone from a shift and the score, skill coverage and VIC-coverage badges recompute instantly — using the same scoring logic the generator itself uses.',
     ['Add-from-bench and remove-in-place, no page reload',
+     "Reassign which area of the floor a staff member is covering, right from the same edit view",
      'Overrides are tracked and shown to the approver for context',
      'Nothing is submitted until a manager is satisfied with the result'],
     A.format('admin-manual-edit.png'), image_right=False,
@@ -434,6 +435,55 @@ feature_slide(
     A.format('admin-shifts.png'), image_right=True,
     caption='Shift definitions with per-skill minimum staffing',
 )
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMIN · AREA-SCOPED REQUIREMENTS
+# Illustrative diagram (no screenshot asset exists yet) — mirrors the
+# .area-demo box in product-overview.html; keep both in sync by hand.
+# ─────────────────────────────────────────────────────────────────────────────
+s = add_slide(WHITE)
+text_w = CW - IMG_MAX_W - Inches(0.45)
+img_x = SW - MX - IMG_MAX_W
+text_x = MX
+add_text(s, text_x, Inches(0.75), text_w, Inches(0.35), 'ADMIN · SHIFTS & ROSTERS', size=10.5, color=GOLD, bold=True)
+add_text(s, text_x, Inches(1.12), text_w, Inches(1.35),
+          'Staffing minimums for a specific part of the floor, not just the shift as a whole.',
+          size=21, color=NAVY, font=SERIF, line_spacing=1.15)
+add_text(s, text_x, Inches(2.55), text_w, Inches(1.75),
+          "Areas — Counter, Fitting Room, Concierge, Stockroom, or however a boutique lays out its floor — "
+          "carry their own skill requirements alongside the shift-wide ones. The scheduling engine fills the "
+          "tighter, area-specific need first, then rounds out the rest of the shift from whoever's left.",
+          size=12, color=MUTED, line_spacing=1.32)
+add_bullets(s, text_x, Inches(4.45), text_w, Inches(2.4), [
+    'Define any number of areas per boutique, activated or retired independently — no code change to add one',
+    'A requirement can be area-specific or shift-wide, and both are supported side by side on the same shift',
+    "Every assignment carries its area end to end: roster editing, CSV/PDF export, and each employee's own schedule",
+], size=11.5, gap=9)
+
+diag_w = IMG_MAX_W
+diag_h = Inches(3.75)
+diag_y = IMG_TOP + Inches(0.5)
+add_rect(s, img_x, diag_y, diag_w, diag_h, fill=WHITE, line_color=LINE, line_w=Pt(0.75), round_=True, shadow=True)
+add_text(s, img_x + Inches(0.3), diag_y + Inches(0.22), diag_w - Inches(0.6), Inches(0.4),
+          'Shift: Opening — requirements by area', size=13, color=NAVY, font=SERIF)
+
+zones = [
+    ('Counter', 'Cashier ×1'),
+    ('Fitting Room', 'Sr. Stylist ×1'),
+    ('Concierge', 'VIC Advisor ×1'),
+    ('Shift-wide', 'Floor Manager ×1'),
+]
+zy = diag_y + Inches(0.85)
+zone_h = Inches(0.68)
+for name, chip in zones:
+    add_rect(s, img_x + Inches(0.25), zy, diag_w - Inches(0.5), zone_h - Inches(0.14), fill=WARM, round_=True)
+    add_text(s, img_x + Inches(0.45), zy, Inches(1.8), zone_h - Inches(0.14), name, size=11.5, color=NAVY,
+              bold=True, anchor=MSO_ANCHOR.MIDDLE)
+    add_pill(s, img_x + diag_w - Inches(1.85), zy + Inches(0.07), chip, INK, WHITE, size=9, width=Inches(1.55))
+    zy += zone_h
+add_text(s, img_x, diag_y + diag_h + Inches(0.12), diag_w, Inches(0.4),
+          "Illustrative — a shift's skill requirements, broken out by area of the floor",
+          size=9.5, color=MUTED, italic=True, align=PP_ALIGN.CENTER)
 
 feature_slide(
     WHITE, 'ADMIN · RULES',

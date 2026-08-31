@@ -119,6 +119,16 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
 .shot-frame.mobile{max-width:280px;margin:0 auto}
 .shot-cap{font-size:11px;color:var(--muted);margin-top:10px;text-align:center;font-style:italic}
 
+/* ── Area-scoped requirements diagram (illustrative, not a screenshot) ── */
+.area-demo{background:white;border-radius:10px;border:0.5px solid var(--line);box-shadow:0 12px 32px -12px rgba(20,29,74,.18);padding:24px 26px}
+.area-demo-title{font-family:var(--serif);font-size:14.5px;color:var(--navy);margin-bottom:16px}
+.area-demo-title b{color:var(--gold)}
+.area-demo-zones{display:flex;flex-direction:column;gap:10px}
+.area-zone{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--warm);border-radius:8px;padding:12px 16px}
+.zone-name{font-size:13px;font-weight:600;color:var(--navy);flex-shrink:0}
+.zone-reqs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.zone-chip{font-size:11px;font-weight:500;background:white;border:0.5px solid var(--line);border-radius:4px;padding:3px 9px;color:var(--ink);white-space:nowrap}
+
 /* ── Budget section ── */
 .budget{background:var(--navy-deep);color:var(--cream)}
 .budget h2{color:white;font-size:clamp(24px,3vw,34px);margin-bottom:10px}
@@ -190,7 +200,7 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
       </div>
       <div class="exec-cards">
         <div class="exec-card"><div class="k">Who it's for</div><div class="v">Operations admins, the manager who approves each roster, floor staff checking their shifts, and read-only viewers browsing published rosters.</div></div>
-        <div class="exec-card"><div class="k">What changed recently</div><div class="v">The Reader portal shipped — published-roster browsing with CSV/PDF export — completing all four portals.</div></div>
+        <div class="exec-card"><div class="k">What changed recently</div><div class="v">Skill requirements can now be scoped to a specific area of the floor (Counter, Fitting Room, Concierge…), not just the shift as a whole — carried through generation, manual edits, exports and each employee's own schedule.</div></div>
         <div class="exec-card"><div class="k">Why it matters for budget</div><div class="v">One codebase, one data model, every boutique — a new store is configuration, not a rebuild.</div></div>
       </div>
     </div>
@@ -328,6 +338,7 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
       <p>Add or remove anyone from a shift and the score, skill coverage and VIC-coverage badges recompute instantly — using the same scoring logic the generator itself uses, so a manual fix and a fresh generation are always judged the same way.</p>
       <ul class="feature-list">
         <li>Add-from-bench and remove-in-place, no page reload</li>
+        <li>Reassign which area of the floor a staff member is covering, right from the same edit view</li>
         <li>Overrides are tracked and shown to the approver for context</li>
         <li>Nothing is submitted until a manager is satisfied with the result</li>
       </ul>
@@ -390,6 +401,34 @@ p{color:var(--muted);font-size:15px;line-height:1.7}
         <li>Independent shift definitions per boutique — no shared template lock-in</li>
         <li>Minimum (and optional maximum) headcount per skill, per shift</li>
         <li>Closure dates the engine automatically respects</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── Admin feature 5b: Area-scoped requirements ── -->
+<section class="section feature">
+  <div class="wrap feature-row rev">
+    <div class="shot-col">
+      <div class="area-demo">
+        <div class="area-demo-title">Shift: <b>Opening</b> — requirements by area</div>
+        <div class="area-demo-zones">
+          <div class="area-zone"><span class="zone-name">Counter</span><div class="zone-reqs"><span class="zone-chip">Cashier ×1</span></div></div>
+          <div class="area-zone"><span class="zone-name">Fitting Room</span><div class="zone-reqs"><span class="zone-chip">Sr. Stylist ×1</span></div></div>
+          <div class="area-zone"><span class="zone-name">Concierge</span><div class="zone-reqs"><span class="zone-chip">VIC Advisor ×1</span></div></div>
+          <div class="area-zone"><span class="zone-name">Shift-wide</span><div class="zone-reqs"><span class="zone-chip">Floor Manager ×1</span></div></div>
+        </div>
+      </div>
+      <div class="shot-cap">Illustrative — a shift's skill requirements, broken out by area of the floor</div>
+    </div>
+    <div class="copy-col feature-copy">
+      <span class="role-tag">Admin · Shifts &amp; Rosters</span>
+      <h3>Staffing minimums for a specific part of the floor, not just the shift as a whole.</h3>
+      <p>Areas — Counter, Fitting Room, Concierge, Stockroom, or however a boutique lays out its floor — carry their own skill requirements alongside the shift-wide ones. The scheduling engine fills the tighter, area-specific need first, then rounds out the rest of the shift from whoever's left.</p>
+      <ul class="feature-list">
+        <li>Define any number of areas per boutique, activated or retired independently — no code change to add one</li>
+        <li>A requirement can be area-specific or shift-wide, and both are supported side by side on the same shift</li>
+        <li>Every assignment carries its area end to end: roster editing, CSV/PDF export, and each employee's own schedule</li>
       </ul>
     </div>
   </div>
