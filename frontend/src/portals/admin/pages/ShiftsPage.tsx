@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '../../../components/layout/PageHeader'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
-import type { SessionContext, BoutiqueShift, ShiftRequirement, BoutiqueClosure, SkillType } from '../../../lib/types'
+import type { SessionContext, BoutiqueShift, ShiftRequirement, BoutiqueClosure, SkillType, BoutiqueArea } from '../../../lib/types'
 import { supabase } from '../../../lib/supabase'
 import styles from './ShiftsPage.module.css'
 
@@ -42,6 +42,7 @@ export function ShiftsPage({ session }: Props) {
   const [requirements, setRequirements] = useState<Record<string, ShiftRequirement[]>>({})
   const [closures, setClosures] = useState<BoutiqueClosure[]>([])
   const [skillTypes, setSkillTypes] = useState<SkillType[]>([])
+  const [areas, setAreas] = useState<BoutiqueArea[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,12 +55,20 @@ export function ShiftsPage({ session }: Props) {
   // expanded shift (shows requirements)
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  // inline req editing: key = `${shiftId}:${skillTypeId}`
+  // inline req editing: key = `${shiftId}:${skillTypeId}:${areaId ?? 'shiftwide'}`
   const [reqDraft, setReqDraft] = useState<Record<string, { min: string; max: string }>>({})
   const [reqSaving, setReqSaving] = useState<Record<string, boolean>>({})
   const [addReqShift, setAddReqShift] = useState<string | null>(null)
   const [addReqSkill, setAddReqSkill] = useState('')
   const [addReqMin, setAddReqMin] = useState('1')
+  const [addReqArea, setAddReqArea] = useState('')   // '' = shift-wide
+
+  // areas
+  const [areaDraft, setAreaDraft] = useState<Record<string, { name: string; sort_order: string }>>({})
+  const [areaSaving, setAreaSaving] = useState<Record<string, boolean>>({})
+  const [areaError, setAreaError] = useState<string | null>(null)
+  const [newAreaName, setNewAreaName] = useState('')
+  const [addingArea, setAddingArea] = useState(false)
 
   // closures
   const [closureDate, setClosureDate] = useState('')
@@ -72,10 +81,14 @@ export function ShiftsPage({ session }: Props) {
     if (!boutiqueId) return
     setLoading(true); setError(null)
 
-    const [shiftRes, skillRes, closureRes] = await Promise.all([
+    const [shiftRes, skillRes, closureRes, areaRes] = await Promise.all([
       supabase.from('boutique_shifts').select('*').eq('boutique_id', boutiqueId).order('sort_order'),
       supabase.from('skill_types').select('*').order('engine_priority', { ascending: false }),
       supabase.from('boutique_closures').select('id, closure_date, reason').eq('boutique_id', boutiqueId).order('closure_date'),
+      // Not filtered to is_active — the Areas section manages inactive areas
+      // too; the requirement editor's area picker filters to active ones itself.
+      supabase.from('boutique_areas').select('id, name, sort_order, is_active')
+        .eq('boutique_id', boutiqueId).order('sort_order'),
     ])
 
     if (shiftRes.error) { setError(shiftRes.error.message); setLoading(false); return }
@@ -83,17 +96,14 @@ export function ShiftsPage({ session }: Props) {
     setShifts(shiftRes.data ?? [])
     if (skillRes.data) setSkillTypes(skillRes.data)
     if (closureRes.data) setClosures(closureRes.data)
+    if (areaRes.data) setAreas(areaRes.data)
 
     const shiftIds = (shiftRes.data ?? []).map(s => s.id)
     if (shiftIds.length) {
-      // Scoped to shift-wide requirements only (area_id IS NULL) — this page
-      // predates per-area requirements (migration 030) and doesn't yet have
-      // an area-management UI; area-scoped rows are left for that UI.
       const { data: reqRows } = await supabase
         .from('boutique_shift_requirements')
-        .select('shift_id, skill_type_id, min_count, max_count, skill_types(name)')
+        .select('shift_id, skill_type_id, min_count, max_count, area_id, boutique_areas(name), skill_types(name)')
         .in('shift_id', shiftIds)
-        .is('area_id', null)
 
       const byShift: Record<string, ShiftRequirement[]> = {}
       for (const r of reqRows ?? []) {
@@ -103,6 +113,8 @@ export function ShiftsPage({ session }: Props) {
           skill_type_name: (r.skill_types as any)?.name ?? '',
           min_count: r.min_count,
           max_count: r.max_count,
+          area_id: r.area_id,
+          area_name: (r.boutique_areas as any)?.name ?? null,
         }
         byShift[r.shift_id] = [...(byShift[r.shift_id] ?? []), entry]
       }
@@ -162,10 +174,20 @@ export function ShiftsPage({ session }: Props) {
 
   // ── Requirements ────────────────────────────────────────────────────────────
 
-  const reqKey = (shiftId: string, skillTypeId: string) => `${shiftId}:${skillTypeId}`
+  const reqKey = (shiftId: string, skillTypeId: string, areaId: string | null) =>
+    `${shiftId}:${skillTypeId}:${areaId ?? 'shiftwide'}`
 
-  const saveReq = useCallback(async (shiftId: string, skillTypeId: string) => {
-    const key = reqKey(shiftId, skillTypeId)
+  // A requirement row is uniquely identified by (shift_id, skill_type_id, area_id) —
+  // area_id can repeat a skill across different areas of the same shift, so every
+  // query here must scope by area too (area_id IS NULL for shift-wide requirements,
+  // since a plain .eq('area_id', null) does not match NULL in Postgres).
+  const scopeToReqRow = (query: any, shiftId: string, skillTypeId: string, areaId: string | null) => {
+    const q = query.eq('shift_id', shiftId).eq('skill_type_id', skillTypeId)
+    return areaId ? q.eq('area_id', areaId) : q.is('area_id', null)
+  }
+
+  const saveReq = useCallback(async (shiftId: string, skillTypeId: string, areaId: string | null) => {
+    const key = reqKey(shiftId, skillTypeId, areaId)
     const draft = reqDraft[key]
     if (!draft) return
     setReqSaving(prev => ({ ...prev, [key]: true }))
@@ -174,24 +196,24 @@ export function ShiftsPage({ session }: Props) {
     // key with a surrogate id (to allow multiple area-scoped rows per skill),
     // so a plain upsert() would default to conflict-checking on that new id
     // column and always insert a duplicate instead of updating. This editor
-    // only ever edits an existing shift-wide row (adding one is addReq,
-    // below), so an explicit update scoped to the shift-wide row is correct
-    // and avoids relying on upsert's conflict target entirely.
-    await supabase.from('boutique_shift_requirements')
-      .update({
+    // only ever edits an existing row (adding one is addReq, below), so an
+    // explicit update scoped to the row's (shift, skill, area) is correct and
+    // avoids relying on upsert's conflict target entirely.
+    await scopeToReqRow(
+      supabase.from('boutique_shift_requirements').update({
         min_count: parseInt(draft.min) || 1,
         max_count: draft.max ? parseInt(draft.max) : null,
-      })
-      .eq('shift_id', shiftId).eq('skill_type_id', skillTypeId).is('area_id', null)
+      }),
+      shiftId, skillTypeId, areaId,
+    )
 
     setReqSaving(prev => ({ ...prev, [key]: false }))
     setReqDraft(prev => { const n = { ...prev }; delete n[key]; return n })
     await load()
   }, [reqDraft, load])
 
-  const deleteReq = useCallback(async (shiftId: string, skillTypeId: string) => {
-    await supabase.from('boutique_shift_requirements')
-      .delete().eq('shift_id', shiftId).eq('skill_type_id', skillTypeId).is('area_id', null)
+  const deleteReq = useCallback(async (shiftId: string, skillTypeId: string, areaId: string | null) => {
+    await scopeToReqRow(supabase.from('boutique_shift_requirements').delete(), shiftId, skillTypeId, areaId)
     await load()
   }, [load])
 
@@ -200,11 +222,49 @@ export function ShiftsPage({ session }: Props) {
     const { error } = await supabase.from('boutique_shift_requirements').insert({
       shift_id: shiftId, skill_type_id: addReqSkill,
       min_count: parseInt(addReqMin) || 1,
+      area_id: addReqArea || null,
     })
     if (error) return
-    setAddReqShift(null); setAddReqSkill(''); setAddReqMin('1')
+    setAddReqShift(null); setAddReqSkill(''); setAddReqMin('1'); setAddReqArea('')
     await load()
-  }, [addReqSkill, addReqMin, load])
+  }, [addReqSkill, addReqMin, addReqArea, load])
+
+  // ── Areas ────────────────────────────────────────────────────────────────────
+
+  const saveArea = useCallback(async (areaId: string) => {
+    const draft = areaDraft[areaId]
+    if (!draft || !draft.name.trim()) return
+    setAreaSaving(prev => ({ ...prev, [areaId]: true })); setAreaError(null)
+
+    const { error } = await supabase.from('boutique_areas')
+      .update({ name: draft.name.trim(), sort_order: parseInt(draft.sort_order) || 0 })
+      .eq('id', areaId)
+
+    setAreaSaving(prev => ({ ...prev, [areaId]: false }))
+    if (error) { setAreaError(error.message); return }
+    setAreaDraft(prev => { const n = { ...prev }; delete n[areaId]; return n })
+    await load()
+  }, [areaDraft, load])
+
+  const toggleAreaActive = useCallback(async (areaId: string, currentlyActive: boolean) => {
+    await supabase.from('boutique_areas').update({ is_active: !currentlyActive }).eq('id', areaId)
+    await load()
+  }, [load])
+
+  const addArea = useCallback(async () => {
+    if (!boutiqueId || !newAreaName.trim()) return
+    setAddingArea(true); setAreaError(null)
+    const nextSort = areas.length ? Math.max(...areas.map(a => a.sort_order)) + 1 : 0
+
+    const { error } = await supabase.from('boutique_areas').insert({
+      boutique_id: boutiqueId, name: newAreaName.trim(), sort_order: nextSort,
+    })
+
+    setAddingArea(false)
+    if (error) { setAreaError(error.message); return }
+    setNewAreaName('')
+    await load()
+  }, [boutiqueId, newAreaName, areas, load])
 
   // ── Closures ─────────────────────────────────────────────────────────────────
 
@@ -286,8 +346,8 @@ export function ShiftsPage({ session }: Props) {
                       <div className={styles.reqSummary}>
                         {reqs.length > 0
                           ? reqs.map(r => (
-                              <span key={r.skill_type_id} className={styles.reqChip}>
-                                {r.skill_type_name} ×{r.min_count}
+                              <span key={reqKey(shift.id, r.skill_type_id, r.area_id)} className={styles.reqChip}>
+                                {r.area_name ? `${r.area_name}: ` : ''}{r.skill_type_name} ×{r.min_count}
                               </span>
                             ))
                           : <span className={styles.noReqs}>No requirements</span>}
@@ -303,6 +363,7 @@ export function ShiftsPage({ session }: Props) {
                         <table className={styles.reqTable}>
                           <thead>
                             <tr>
+                              <th>Area</th>
                               <th>Skill</th>
                               <th>Min</th>
                               <th>Max</th>
@@ -311,13 +372,14 @@ export function ShiftsPage({ session }: Props) {
                           </thead>
                           <tbody>
                             {reqs.map(req => {
-                              const key = reqKey(shift.id, req.skill_type_id)
+                              const key = reqKey(shift.id, req.skill_type_id, req.area_id)
                               const draft = reqDraft[key]
                               const saving = reqSaving[key]
                               const minVal = draft?.min ?? String(req.min_count)
                               const maxVal = draft?.max ?? (req.max_count != null ? String(req.max_count) : '')
                               return (
-                                <tr key={req.skill_type_id}>
+                                <tr key={key}>
+                                  <td>{req.area_name ?? <em className={styles.hint}>Shift-wide</em>}</td>
                                   <td>{req.skill_type_name}</td>
                                   <td>
                                     <input type="number" className={styles.reqInput} value={minVal} min={1}
@@ -330,12 +392,13 @@ export function ShiftsPage({ session }: Props) {
                                   </td>
                                   <td className={styles.reqRowActions}>
                                     {draft && (
-                                      <button className={styles.saveReqBtn} disabled={saving} onClick={() => saveReq(shift.id, req.skill_type_id)}>
+                                      <button className={styles.saveReqBtn} disabled={saving}
+                                        onClick={() => saveReq(shift.id, req.skill_type_id, req.area_id)}>
                                         {saving ? '…' : 'Save'}
                                       </button>
                                     )}
                                     <button className={`${styles.actionBtn} ${styles.danger}`}
-                                      onClick={() => deleteReq(shift.id, req.skill_type_id)}>×</button>
+                                      onClick={() => deleteReq(shift.id, req.skill_type_id, req.area_id)}>×</button>
                                   </td>
                                 </tr>
                               )
@@ -346,11 +409,16 @@ export function ShiftsPage({ session }: Props) {
                         {/* Add requirement row */}
                         {addReqShift === shift.id ? (
                           <div className={styles.addReqRow}>
+                            <select className={styles.addReqSelect} value={addReqArea}
+                              onChange={e => setAddReqArea(e.target.value)}>
+                              <option value="">Shift-wide</option>
+                              {areas.filter(a => a.is_active).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            </select>
                             <select className={styles.addReqSelect} value={addReqSkill}
                               onChange={e => setAddReqSkill(e.target.value)}>
                               <option value="">— skill —</option>
                               {skillTypes
-                                .filter(st => !reqs.find(r => r.skill_type_id === st.id))
+                                .filter(st => !reqs.find(r => r.skill_type_id === st.id && r.area_id === (addReqArea || null)))
                                 .map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
                             </select>
                             <input type="number" className={styles.reqInput} value={addReqMin} min={1}
@@ -360,7 +428,7 @@ export function ShiftsPage({ session }: Props) {
                           </div>
                         ) : (
                           <button className={styles.addReqTrigger}
-                            onClick={() => { setAddReqShift(shift.id); setAddReqSkill(''); setAddReqMin('1') }}>
+                            onClick={() => { setAddReqShift(shift.id); setAddReqSkill(''); setAddReqMin('1'); setAddReqArea('') }}>
                             + Add requirement
                           </button>
                         )}
@@ -371,6 +439,57 @@ export function ShiftsPage({ session }: Props) {
               })}
             </div>
           )}
+        </section>
+
+        {/* ── Areas ── */}
+        <section className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Areas</h2>
+              <p className={styles.cardDesc}>Physical zones within this boutique (e.g. Counter, Fitting Room, Stockroom) that shift requirements can be scoped to. Deactivate an area to hide it from the requirement editor without deleting its history.</p>
+            </div>
+          </div>
+
+          <div className={styles.closureList}>
+            {areas.length === 0 && <p className={styles.empty}>No areas defined yet.</p>}
+            {areas.map(a => {
+              const draft = areaDraft[a.id]
+              const nameVal = draft?.name ?? a.name
+              const sortVal = draft?.sort_order ?? String(a.sort_order)
+              const saving = areaSaving[a.id]
+              return (
+                <div key={a.id} className={styles.closureRow} style={{ opacity: a.is_active ? 1 : 0.55 }}>
+                  <input className={styles.input} style={{ maxWidth: 220 }} value={nameVal}
+                    onChange={e => setAreaDraft(p => ({ ...p, [a.id]: { name: e.target.value, sort_order: sortVal } }))} />
+                  <input type="number" className={styles.reqInput} value={sortVal} min={0}
+                    title="Sort order"
+                    onChange={e => setAreaDraft(p => ({ ...p, [a.id]: { name: nameVal, sort_order: e.target.value } }))} />
+                  {!a.is_active && <em className={styles.hint}>Inactive</em>}
+                  <div className={styles.reqRowActions} style={{ marginLeft: 'auto' }}>
+                    {draft && (
+                      <button className={styles.saveReqBtn} disabled={saving} onClick={() => saveArea(a.id)}>
+                        {saving ? '…' : 'Save'}
+                      </button>
+                    )}
+                    <button className={styles.actionBtn} onClick={() => toggleAreaActive(a.id, a.is_active)}>
+                      {a.is_active ? 'Deactivate' : 'Reactivate'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className={styles.addClosureRow}>
+            <input type="text" className={styles.input} style={{ maxWidth: 220 }}
+              placeholder="Area name" value={newAreaName}
+              onChange={e => setNewAreaName(e.target.value)} />
+            <Button variant="secondary" size="sm" loading={addingArea}
+              disabled={!newAreaName.trim()} onClick={addArea}>
+              Add area
+            </Button>
+            {areaError && <span className={styles.errorMsg} style={{ padding: 0 }}>{areaError}</span>}
+          </div>
         </section>
 
         {/* ── Closure dates ── */}

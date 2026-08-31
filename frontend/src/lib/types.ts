@@ -185,6 +185,15 @@ export interface ShiftRequirement {
   skill_type_name: string
   min_count: number
   max_count: number | null
+  area_id: string | null    // null = shift-wide requirement
+  area_name: string | null
+}
+
+export interface BoutiqueArea {
+  id: string
+  name: string
+  sort_order: number
+  is_active: boolean
 }
 
 export interface BoutiqueClosure {
