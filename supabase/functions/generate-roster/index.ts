@@ -119,23 +119,28 @@ Deno.serve(async (req) => {
     // ── Shift requirements with day-of-week overrides ────────────────────────
     const [{ data: baseReqs }, { data: dowOverrides }] = await Promise.all([
       db.from('boutique_shift_requirements')
-        .select('shift_id, min_count, max_count, skill_types(id, name, is_vic_eligible, is_senior_equivalent, engine_priority)')
+        .select('shift_id, min_count, max_count, area_id, boutique_areas(id, name), skill_types(id, name, is_vic_eligible, is_senior_equivalent, engine_priority)')
         .in('shift_id', shiftIds),
       db.from('boutique_shift_day_overrides')
-        .select('shift_id, skill_type_id, min_count, max_count')
+        .select('shift_id, skill_type_id, area_id, min_count, max_count')
         .in('shift_id', shiftIds)
         .eq('day_of_week', rosterDow),
     ])
 
-    const overrideKey = (shiftId: string, skillTypeId: string) => `${shiftId}:${skillTypeId}`
+    // Overrides are keyed by area too — an area-scoped requirement and the
+    // shift-wide requirement for the same skill are distinct rows (area_id
+    // NULL vs set), so their day-of-week overrides must not collide.
+    const overrideKey = (shiftId: string, skillTypeId: string, areaId: string | null) =>
+      `${shiftId}:${skillTypeId}:${areaId ?? ''}`
     const overrideMap = new Map<string, { min_count: number; max_count: number | null }>()
     for (const o of dowOverrides ?? []) {
-      overrideMap.set(overrideKey(o.shift_id, o.skill_type_id), { min_count: o.min_count, max_count: o.max_count })
+      overrideMap.set(overrideKey(o.shift_id, o.skill_type_id, o.area_id), { min_count: o.min_count, max_count: o.max_count })
     }
 
     const requirements = (baseReqs ?? []).map((r: any) => {
       const st = r.skill_types
-      const ov = overrideMap.get(overrideKey(r.shift_id, st.id))
+      const area = r.boutique_areas
+      const ov = overrideMap.get(overrideKey(r.shift_id, st.id, r.area_id))
       return {
         shift_id: r.shift_id,
         skill_type_id: st.id,
@@ -145,6 +150,8 @@ Deno.serve(async (req) => {
         engine_priority: st.engine_priority,
         min_count: ov?.min_count ?? r.min_count,
         max_count: ov?.max_count ?? r.max_count ?? null,
+        area_id: r.area_id ?? null,
+        area_name: area?.name ?? null,
       }
     })
 

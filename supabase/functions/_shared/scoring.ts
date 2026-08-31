@@ -19,12 +19,21 @@ export interface ScoringStaff {
   languages: string[]
   primary_skill_type_id: string | null
   is_senior_equivalent: boolean
+  // The area this staff member was assigned to fill, if any. Optional so
+  // existing callers (e.g. frontend/src/lib/rosterScoring.ts, which doesn't
+  // yet have an area-management UI) keep compiling unchanged — omitting it
+  // is equivalent to area_id: null, i.e. "not area-scoped."
+  area_id?: string | null
 }
 
 export interface ScoringRequirement {
   skill_type_id: string
   skill_name: string
   min_count: number
+  // area_id: undefined/null = shift-wide requirement (existing behaviour).
+  // Optional for the same reason as ScoringStaff.area_id above.
+  area_id?: string | null
+  area_name?: string | null
 }
 
 export interface ScoringVicClient {
@@ -44,11 +53,19 @@ export interface ShiftScoreResult {
   score: number
   headcount: number
   skill_ok: boolean
-  unmet_requirements: Array<{ skill_name: string; min_count: number; assigned: number }>
+  unmet_requirements: Array<{ skill_name: string; area_name: string | null; min_count: number; assigned: number }>
   vic_ok: boolean
   gender_pct_female: number
   languages: string[]
   seniority_ok: boolean
+}
+
+// Groups counts/lookups by (area, skill) so an area-scoped requirement is only
+// satisfied by staff assigned to that specific area, while a shift-wide
+// requirement (area_id null) still counts every staff member on the shift —
+// matching the pre-area behaviour exactly when no areas are configured.
+function areaSkillKey(areaId: string | null | undefined, skillTypeId: string): string {
+  return `${areaId ?? ''}:${skillTypeId}`
 }
 
 /**
@@ -73,7 +90,7 @@ export function scoreShiftStaff(
     return {
       score: 0, headcount: 0, skill_ok: false,
       unmet_requirements: requirements.map(r => ({
-        skill_name: r.skill_name, min_count: r.min_count, assigned: 0,
+        skill_name: r.skill_name, area_name: r.area_name ?? null, min_count: r.min_count, assigned: 0,
       })),
       vic_ok: false,
       gender_pct_female: 0, languages: [], seniority_ok: false,
@@ -84,18 +101,20 @@ export function scoreShiftStaff(
   const skillCounts = new Map<string, number>()
   for (const s of assigned) {
     if (s.primary_skill_type_id) {
-      skillCounts.set(s.primary_skill_type_id, (skillCounts.get(s.primary_skill_type_id) ?? 0) + 1)
+      const key = areaSkillKey(s.area_id, s.primary_skill_type_id)
+      skillCounts.set(key, (skillCounts.get(key) ?? 0) + 1)
     }
   }
-  const skillOk = requirements.every(r => (skillCounts.get(r.skill_type_id) ?? 0) >= r.min_count)
+  const countFor = (r: ScoringRequirement) => skillCounts.get(areaSkillKey(r.area_id, r.skill_type_id)) ?? 0
+  const skillOk = requirements.every(r => countFor(r) >= r.min_count)
   const skillScore = skillOk ? 1 : requirements.reduce((a, r) => {
-    return a + Math.min((skillCounts.get(r.skill_type_id) ?? 0) / r.min_count, 1)
+    return a + Math.min(countFor(r) / r.min_count, 1)
   }, 0) / Math.max(requirements.length, 1)
   const unmetRequirements = requirements
-    .filter(r => (skillCounts.get(r.skill_type_id) ?? 0) < r.min_count)
+    .filter(r => countFor(r) < r.min_count)
     .map(r => ({
-      skill_name: r.skill_name, min_count: r.min_count,
-      assigned: skillCounts.get(r.skill_type_id) ?? 0,
+      skill_name: r.skill_name, area_name: r.area_name ?? null, min_count: r.min_count,
+      assigned: countFor(r),
     }))
 
   // 2. VIC affiliation — a client is "covered" if any of their advisors is on shift

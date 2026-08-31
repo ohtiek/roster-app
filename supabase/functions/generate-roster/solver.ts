@@ -21,6 +21,8 @@ export interface SolverShift {
     is_vic_eligible: boolean
     is_senior_equivalent: boolean
     engine_priority: number
+    area_id: string | null    // null = shift-wide requirement (pre-area behaviour)
+    area_name: string | null
   }>
 }
 
@@ -116,6 +118,8 @@ export interface SolverResult {
     staff_name: string
     is_vic_active: boolean
     shift_duration_hours: number
+    area_id: string | null    // the area this assignment fills, if any
+    area_name: string | null
   }>
   shift_scores: Array<{
     shift_id: string
@@ -123,7 +127,7 @@ export interface SolverResult {
     score: number
     headcount: number
     skill_ok: boolean
-    unmet_requirements: Array<{ skill_name: string; min_count: number; assigned: number }>
+    unmet_requirements: Array<{ skill_name: string; area_name: string | null; min_count: number; assigned: number }>
     vic_ok: boolean
     gender_pct_female: number
     languages: string[]
@@ -170,6 +174,10 @@ export function solve(input: SolverInput): SolverResult {
 
   const shiftAssignments = new Map<string, SolverStaff[]>()
   for (const s of sortedShifts) shiftAssignments.set(s.id, [])
+
+  // Per-shift staff→area attribution, keyed by shift id then staff id.
+  const shiftStaffAreaId = new Map<string, Map<string, string | null>>()
+  const shiftStaffAreaName = new Map<string, Map<string, string | null>>()
 
   // Accumulated hours and shift count per staff member for this roster day
   const dailyHours = new Map<string, number>()
@@ -226,8 +234,23 @@ export function solve(input: SolverInput): SolverResult {
 
     const assigned: SolverStaff[] = []
 
-    // Pass 1: fill minimum requirements per skill type, highest engine_priority first
-    const reqsByPriority = [...shift.requirements].sort((a, b) => b.engine_priority - a.engine_priority)
+    // Which area (if any) each staff member was picked to fill on this shift.
+    // Populated during Pass 1 as area-scoped requirements are satisfied; a
+    // staff member assigned via a shift-wide requirement, VIC coverage, or
+    // headcount fill-up (passes 2/3) has no area (null = "floating").
+    const staffAreaId = new Map<string, string | null>()
+    const staffAreaName = new Map<string, string | null>()
+
+    // Pass 1: fill minimum requirements per skill type, highest engine_priority
+    // first. Area-scoped requirements go before shift-wide ones — they're the
+    // tighter constraint (a specific zone needing a specific skill), so they
+    // get first pick of the eligible pool; shift-wide requirements then fill
+    // from whoever's left.
+    const byPriorityDesc = (a: typeof shift.requirements[number], b: typeof shift.requirements[number]) =>
+      b.engine_priority - a.engine_priority
+    const areaReqs = shift.requirements.filter(r => r.area_id != null).sort(byPriorityDesc)
+    const shiftWideReqs = shift.requirements.filter(r => r.area_id == null).sort(byPriorityDesc)
+    const reqsByPriority = [...areaReqs, ...shiftWideReqs]
     for (const req of reqsByPriority) {
       let filled = 0
       for (const s of sorted) {
@@ -236,6 +259,8 @@ export function solve(input: SolverInput): SolverResult {
         if (!canAssign(s)) continue
         if (s.skills.some(sk => sk.skill_type_id === req.skill_type_id)) {
           assigned.push(s)
+          staffAreaId.set(s.id, req.area_id)
+          staffAreaName.set(s.id, req.area_name)
           filled++
         }
       }
@@ -258,21 +283,27 @@ export function solve(input: SolverInput): SolverResult {
       if (!assigned.includes(s) && canAssign(s)) assigned.push(s)
     }
 
-    // Trim to max_count per skill type
+    // Trim to max_count per skill type — scoped to the same area (or
+    // shift-wide) the staff member was actually assigned to fill, so an
+    // area's cap doesn't get consumed by another area's headcount.
     const finalAssigned: SolverStaff[] = []
     const skillUsed = new Map<string, number>()
     for (const s of assigned) {
       const primary = s.skills.find(sk => sk.is_primary)
       if (primary) {
-        const req = shift.requirements.find(r => r.skill_type_id === primary.skill_type_id)
-        const used = skillUsed.get(primary.skill_type_id) ?? 0
+        const areaId = staffAreaId.get(s.id) ?? null
+        const req = shift.requirements.find(r => r.skill_type_id === primary.skill_type_id && r.area_id === areaId)
+        const key = `${areaId ?? ''}:${primary.skill_type_id}`
+        const used = skillUsed.get(key) ?? 0
         if (req?.max_count != null && used >= req.max_count) continue
-        skillUsed.set(primary.skill_type_id, used + 1)
+        skillUsed.set(key, used + 1)
       }
       finalAssigned.push(s)
     }
 
     shiftAssignments.set(shift.id, finalAssigned)
+    shiftStaffAreaId.set(shift.id, new Map(staffAreaId))
+    shiftStaffAreaName.set(shift.id, new Map(staffAreaName))
 
     for (const s of finalAssigned) {
       dailyHours.set(s.id, (dailyHours.get(s.id) ?? 0) + shift.duration_hours)
@@ -284,6 +315,8 @@ export function solve(input: SolverInput): SolverResult {
   // ── Assignments output ───────────────────────────────────────────────────
   const assignments: SolverResult['assignments'] = []
   for (const shift of sortedShifts) {
+    const areaIdByStaff = shiftStaffAreaId.get(shift.id)
+    const areaNameByStaff = shiftStaffAreaName.get(shift.id)
     for (const s of shiftAssignments.get(shift.id) ?? []) {
       assignments.push({
         shift_id: shift.id,
@@ -292,13 +325,22 @@ export function solve(input: SolverInput): SolverResult {
         staff_name: s.name,
         is_vic_active: vicAdvisorIds.has(s.id),
         shift_duration_hours: shift.duration_hours,
+        area_id: areaIdByStaff?.get(s.id) ?? null,
+        area_name: areaNameByStaff?.get(s.id) ?? null,
       })
     }
   }
 
   // ── Shift scores ─────────────────────────────────────────────────────────
   const shift_scores = sortedShifts.map(shift =>
-    scoreShift(shift, shiftAssignments.get(shift.id) ?? [], vic_clients, config.weights, rules)
+    scoreShift(
+      shift,
+      shiftAssignments.get(shift.id) ?? [],
+      shiftStaffAreaId.get(shift.id) ?? new Map(),
+      vic_clients,
+      config.weights,
+      rules,
+    )
   )
 
   // ── VIC coverage report ──────────────────────────────────────────────────
@@ -408,6 +450,7 @@ export function solve(input: SolverInput): SolverResult {
 function scoreShift(
   shift: SolverShift,
   assigned: SolverStaff[],
+  staffAreaId: Map<string, string | null>,
   vicClients: SolverVICClient[],
   weights: SolverConfig['weights'],
   rules: RuleConfigMap,
@@ -419,6 +462,7 @@ function scoreShift(
     languages: s.languages,
     primary_skill_type_id: s.skills.find(sk => sk.is_primary)?.skill_type_id ?? null,
     is_senior_equivalent: s.skills.some(sk => sk.is_senior_equivalent),
+    area_id: staffAreaId.get(s.id) ?? null,
   }))
 
   const result = scoreShiftStaff(
