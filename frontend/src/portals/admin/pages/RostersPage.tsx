@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
 import type {
   SessionContext, RosterHistoryRow, RosterPayload, RosterStatus,
-  RosterAssignment, RosterShiftScore, RosterVicCoverage,
+  RosterAssignment, RosterShiftScore, RosterVicCoverage, BoutiqueEvent,
 } from '../../../lib/types'
 import { supabase } from '../../../lib/supabase'
 import { loadShiftOrder, loadScoringRefData, recomputeRoster, type ScoringRefData, type ShiftOrderEntry } from '../../../lib/rosterScoring'
@@ -38,19 +38,19 @@ function scoreColor(score: number | null) {
   return styles.scoreLow
 }
 
+function eventsForDate(events: BoutiqueEvent[], date: string) {
+  return events.filter(e => e.starts_on <= date && e.ends_on >= date)
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 type FilterStatus = 'all' | RosterStatus
 
 export function RostersPage({ session }: Props) {
   const boutiqueId = session.activeBoutiqueId
-  // Matches roster_update_approver's RLS grant exactly: only the 'approver'
-  // role at this boutique can approve/reject/publish. regional_admin is
-  // intentionally excluded — it's read-only oversight by design and has no
-  // UPDATE policy on roster_history at all.
-  const canApprove = session.boutiqueRoles.some(r => r.boutique_id === boutiqueId && r.role === 'approver')
 
   const [rosters, setRosters] = useState<RosterHistoryRow[]>([])
+  const [events, setEvents] = useState<BoutiqueEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
@@ -77,16 +77,25 @@ export function RostersPage({ session }: Props) {
     if (!boutiqueId) return
     setLoading(true); setError(null)
 
-    const { data, error: err } = await supabase
-      .from('roster_history')
-      .select('id, roster_date, status, overall_score, override_count, submit_deadline, approve_deadline, submitted_at, created_at')
-      .eq('boutique_id', boutiqueId)
-      .order('roster_date', { ascending: false })
-      .limit(60)
+    const [rosterRes, eventsRes] = await Promise.all([
+      supabase
+        .from('roster_history')
+        .select('id, roster_date, status, overall_score, override_count, submit_deadline, approve_deadline, submitted_at, created_at')
+        .eq('boutique_id', boutiqueId)
+        .order('roster_date', { ascending: false })
+        .limit(60),
+      supabase
+        .from('boutique_events')
+        .select('id, boutique_id, title, starts_on, ends_on, color')
+        .eq('boutique_id', boutiqueId)
+        .order('starts_on', { ascending: false })
+        .limit(200),
+    ])
 
     setLoading(false)
-    if (err) { setError(err.message); return }
-    setRosters(data ?? [])
+    if (rosterRes.error) { setError(rosterRes.error.message); return }
+    setRosters(rosterRes.data ?? [])
+    setEvents(eventsRes.error ? [] : (eventsRes.data ?? []))
   }, [boutiqueId])
 
   useEffect(() => { load() }, [load])
@@ -143,34 +152,61 @@ export function RostersPage({ session }: Props) {
     await load()
   }, [boutiqueId, genDate, load])
 
-  // ── Status actions ──────────────────────────────────────────────────────────
+  // ── Publish ──────────────────────────────────────────────────────────────────
+  // A single action takes a draft straight to live — no separate submit/
+  // approve step is shown in the UI. Under the hood it still walks the
+  // existing draft → submitted → approved → published states (nothing in the
+  // schema or RLS changed), it just does it in one click instead of asking a
+  // second person to review and click through each stage.
 
-  const setStatus = useCallback(async (id: string, status: RosterStatus) => {
-    setActionSaving(id); setActionError(null)
-    const patch: Record<string, unknown> = { status }
-    if (status === 'submitted') patch.submitted_at = new Date().toISOString()
-    if (status === 'draft') patch.submitted_at = null   // withdraw: no longer submitted
+  const publishDirect = useCallback(async (roster: RosterHistoryRow) => {
+    setActionSaving(roster.id); setActionError(null)
 
-    const { data, error: err } = await supabase
-      .from('roster_history').update(patch).eq('id', id).select('id')
+    async function step(status: RosterStatus, extra?: Record<string, unknown>) {
+      const { data, error: err } = await supabase
+        .from('roster_history').update({ status, ...extra }).eq('id', roster.id).select('id')
+      if (err) throw err
+      if (!data || data.length === 0) throw new Error('approver_required')
+    }
 
-    setActionSaving(null)
-    if (err) {
-      setActionError(friendlyRosterUpdateError(err))
+    try {
+      if (roster.status === 'draft' || roster.status === 'rejected') {
+        await step('submitted', { submitted_at: new Date().toISOString() })
+      }
+      if (roster.status !== 'approved') {
+        await step('approved')
+      }
+      const { error: pubErr } = await publishRoster(roster.id)
+      if (pubErr) throw new Error(pubErr)
+    } catch (e) {
+      setActionSaving(null)
+      if (e instanceof Error && e.message === 'approver_required') {
+        setActionError(
+          'Publishing needs approver access at this boutique — ask your regional admin to grant it. ' +
+          'Once you have it, Publish takes a draft straight to live in one click.'
+        )
+      } else if (e instanceof Error) {
+        setActionError(e.message)
+      } else {
+        setActionError(friendlyRosterUpdateError(e as Parameters<typeof friendlyRosterUpdateError>[0]))
+      }
       return
     }
+    setActionSaving(null)
+    await load()
+  }, [load])
+
+  const backToDraft = useCallback(async (id: string) => {
+    setActionSaving(id); setActionError(null)
+    const { data, error: err } = await supabase
+      .from('roster_history').update({ status: 'draft', submitted_at: null }).eq('id', id).select('id')
+
+    setActionSaving(null)
+    if (err) { setActionError(friendlyRosterUpdateError(err)); return }
     if (!data || data.length === 0) {
       setActionError('Update did not apply — you may not have permission to change this roster.')
       return
     }
-    await load()
-  }, [load])
-
-  const publish = useCallback(async (id: string) => {
-    setActionSaving(id); setActionError(null)
-    const { error: err } = await publishRoster(id)
-    setActionSaving(null)
-    if (err) { setActionError(err); return }
     await load()
   }, [load])
 
@@ -189,12 +225,12 @@ export function RostersPage({ session }: Props) {
 
   return (
     <div className={styles.page}>
-      <PageHeader title="Rosters" subtitle="Generate drafts, review assignments, and submit for approval" />
+      <PageHeader title="Rosters" subtitle="Generate drafts, review assignments, and publish" />
 
       {/* ── Toolbar ── */}
       <div className={styles.toolbar}>
         <div className={styles.filters}>
-          {(['all', 'draft', 'submitted', 'approved', 'published', 'rejected'] as FilterStatus[]).map(s => (
+          {(['all', 'draft', 'published', 'rejected', 'archived'] as FilterStatus[]).map(s => (
             <button
               key={s}
               className={`${styles.filterPill} ${filterStatus === s ? styles.active : ''}`}
@@ -235,7 +271,7 @@ export function RostersPage({ session }: Props) {
                     <th>Status</th>
                     <th>Score</th>
                     <th>Overrides</th>
-                    <th>Submit by</th>
+                    <th>Deadline</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -251,7 +287,13 @@ export function RostersPage({ session }: Props) {
                               <span className={`${styles.chevron} ${isExp ? styles.open : ''}`}>›</span>
                             </button>
                           </td>
-                          <td className={styles.dateCell}>{fmtDate(roster.roster_date)}</td>
+                          <td className={styles.dateCell}>
+                            {fmtDate(roster.roster_date)}
+                            {eventsForDate(events, roster.roster_date).map(ev => (
+                              <span key={ev.id} className={styles.eventDot}
+                                style={{ background: ev.color }} title={ev.title} />
+                            ))}
+                          </td>
                           <td>
                             <span className={`${styles.statusBadge} ${styles[roster.status]}`}>
                               {STATUS_LABEL[roster.status]}
@@ -274,29 +316,19 @@ export function RostersPage({ session }: Props) {
                           </td>
                           <td>
                             <div className={styles.actionGroup}>
-                              {roster.status === 'draft' && (
-                                <Button variant="secondary" size="sm" loading={saving}
-                                  onClick={() => setStatus(roster.id, 'submitted')}>
-                                  Submit
+                              {(roster.status === 'draft' || roster.status === 'rejected'
+                                || roster.status === 'submitted' || roster.status === 'pending_review'
+                                || roster.status === 'approved') && (
+                                <Button variant="primary" size="sm" loading={saving}
+                                  onClick={() => publishDirect(roster)}>
+                                  {roster.status === 'rejected' ? 'Re-publish' : 'Publish'}
                                 </Button>
                               )}
                               {roster.status === 'submitted' && (
                                 <Button variant="ghost" size="sm" loading={saving}
-                                  onClick={() => setStatus(roster.id, 'draft')}>
-                                  Withdraw
+                                  onClick={() => backToDraft(roster.id)}>
+                                  Back to draft
                                 </Button>
-                              )}
-                              {roster.status === 'submitted' && canApprove && (
-                                <>
-                                  <Button variant="primary" size="sm" loading={saving}
-                                    onClick={() => setStatus(roster.id, 'approved')}>Approve</Button>
-                                  <Button variant="danger" size="sm" loading={saving}
-                                    onClick={() => setStatus(roster.id, 'rejected')}>Reject</Button>
-                                </>
-                              )}
-                              {roster.status === 'approved' && canApprove && (
-                                <Button variant="primary" size="sm" loading={saving}
-                                  onClick={() => publish(roster.id)}>Publish</Button>
                               )}
                             </div>
                           </td>

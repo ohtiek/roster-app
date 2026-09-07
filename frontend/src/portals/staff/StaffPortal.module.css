@@ -56,6 +56,104 @@
   border-radius: 3px; padding: 1px 6px;
 }
 
+/* ── Month calendar ── */
+.calNav { display: flex; align-items: center; gap: 0.5rem; }
+
+.calNavBtn {
+  font-size: 16px; line-height: 1;
+  border: 1px solid var(--dash-border); border-radius: 6px;
+  background: var(--dash-surface); color: var(--dash-text);
+  width: 28px; height: 28px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+.calNavBtn:hover { background: var(--dash-hover); border-color: var(--dash-accent); }
+
+.calMonthLabel {
+  font-size: 13.5px; font-weight: 600; color: var(--dash-text);
+  min-width: 128px; text-align: center;
+}
+
+.calTodayBtn {
+  font-size: 12.5px; font-weight: 500;
+  border: 1px solid var(--dash-border); border-radius: 6px;
+  background: none; color: var(--dash-muted);
+  padding: 4px 10px; cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.calTodayBtn:hover { color: var(--dash-accent); border-color: var(--dash-accent); }
+
+.calendar {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.calWeekHeader {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--dash-border);
+  background: var(--dash-hover);
+}
+.calWeekday {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--dash-muted);
+  text-align: center; padding: 0.55rem 0;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(84px, auto);
+}
+
+.calCell {
+  border-right: 1px solid var(--dash-border);
+  border-bottom: 1px solid var(--dash-border);
+  padding: 0.4rem 0.45rem;
+  display: flex; flex-direction: column; gap: 3px;
+  min-width: 0;
+}
+.calGrid .calCell:nth-child(7n) { border-right: none; }
+
+.calCellBlank { background: var(--dash-hover); }
+
+.calCellToday { background: rgba(184,151,58,0.07); }
+
+.calDayNum {
+  font-size: 12px; font-weight: 600; color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+.calCellToday .calDayNum {
+  color: var(--dash-accent);
+}
+
+.calEventChip {
+  font-size: 10.5px; font-weight: 600;
+  border: 1px solid; border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.calShift {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  font-size: 11.5px;
+  background: var(--dash-hover);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+.calShiftName { font-weight: 600; color: var(--dash-text); text-transform: capitalize; }
+.calShiftArea { color: var(--dash-muted); font-size: 10.5px; }
+
+@media (max-width: 900px) {
+  .calGrid { grid-auto-rows: minmax(64px, auto); }
+  .calShiftArea { display: none; }
+}
+
 @media (max-width: 640px) {
   .content { padding: 1rem; }
+  .calWeekday { font-size: 9.5px; padding: 0.4rem 0; }
+  .calCell { padding: 0.25rem 0.3rem; }
+  .calEventChip { font-size: 9px; }
+  .calShift { font-size: 10px; }
 }

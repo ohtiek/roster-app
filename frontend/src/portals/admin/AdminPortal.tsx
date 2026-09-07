@@ -6,6 +6,7 @@ import { VicPage } from './pages/VicPage'
 import { ShiftsPage } from './pages/ShiftsPage'
 import { RulesPage } from './pages/RulesPage'
 import { LeavePage } from './pages/LeavePage'
+import { EventsPage } from './pages/EventsPage'
 import type { SessionContext } from '../../lib/types'
 
 interface Props { session: SessionContext }
@@ -20,6 +21,7 @@ export function AdminPortal({ session }: Props) {
       <Route path="shifts/*"  element={<ShiftsPage session={session} />} />
       <Route path="rules/*"   element={<RulesPage session={session} />} />
       <Route path="leave/*"   element={<LeavePage session={session} />} />
+      <Route path="events/*"  element={<EventsPage session={session} />} />
     </Routes>
   )
 }

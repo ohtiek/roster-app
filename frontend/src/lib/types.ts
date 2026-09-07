@@ -202,6 +202,27 @@ export interface BoutiqueClosure {
   reason: string | null
 }
 
+// ─── Marketing / store events ─────────────────────────────────────────────────
+
+export interface BoutiqueEvent {
+  id: string
+  boutique_id: string
+  title: string
+  starts_on: string   // "YYYY-MM-DD"
+  ends_on: string      // "YYYY-MM-DD"
+  color: string
+  created_at?: string
+}
+
+export const EVENT_COLORS: { value: string; label: string }[] = [
+  { value: '#B8973A', label: 'Gold' },
+  { value: '#C0574C', label: 'Rose' },
+  { value: '#3C3489', label: 'Plum' },
+  { value: '#0F6E56', label: 'Sage' },
+  { value: '#1E4D8C', label: 'Slate' },
+  { value: '#72243E', label: 'Berry' },
+]
+
 // ─── Roster history ───────────────────────────────────────────────────────────
 
 export interface RosterHistoryRow {

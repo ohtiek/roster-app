@@ -19,6 +19,7 @@ const NAV: Record<string, NavItem[]> = {
     { to: '/admin/shifts',   label: 'Shifts',       icon: '🕐' },
     { to: '/admin/rules',    label: 'Rules',        icon: '⚙️' },
     { to: '/admin/leave',    label: 'Leave',        icon: '📅' },
+    { to: '/admin/events',   label: 'Events',       icon: '🎉' },
   ],
   approver: [
     { to: '/approvals',         label: 'Inbox',    icon: '📥' },
